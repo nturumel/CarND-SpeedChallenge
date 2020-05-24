@@ -23,7 +23,7 @@ You can also set the number of frames to look back into by  the `--history` flag
 
 You can also turn on brightness augmentation for training by  the `--augment ` flag
 
-## 
+You can also set the number of epochs by using the `--epoch ` flag
 
 ## Test
 
