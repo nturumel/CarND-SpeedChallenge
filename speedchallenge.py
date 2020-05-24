@@ -182,17 +182,17 @@ class SpeedNet:
 
         op_flow=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
         op_flow=TimeDistributed(Activation('relu'))(op_flow)
-        op_flow=BatchNormalization(axis=...)(op_flow)
+        op_flow=BatchNormalization()(op_flow)
         op_flow=TimeDistributed(Dropout(0.5))(op_flow)
 
         op_flow=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
         op_flow=TimeDistributed(Activation('relu'))(op_flow)
-        op_flow=BatchNormalization(axis=...)(op_flow)
+        op_flow=BatchNormalization()(op_flow)
         op_flow=TimeDistributed(Dropout(0.5))(op_flow)
 
         op_flow=TimeDistributed(Convolution2D(128, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
         op_flow=TimeDistributed(Activation('relu'))(op_flow)
-        op_flow=BatchNormalization(axis=...)(op_flow)
+        op_flow=BatchNormalization()(op_flow)
         op_flow=TimeDistributed(Dropout(0.5))(op_flow)
 
 
