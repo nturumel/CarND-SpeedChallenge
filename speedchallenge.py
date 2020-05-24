@@ -1,10 +1,9 @@
-op_flow_1from keras.models import Sequential
+from keras.models import Sequential
 from keras.layers import Dropout, Flatten, Dense, Activation
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
-from keras.layers import Input, TimeDistributed, LSTM,GlobalMaxPool2D,GlobalAveragePooling2D,
-    BatchNormalization
+from keras.layers import Input, TimeDistributed, LSTM,GlobalMaxPool2D,BatchNormalization,GlobalAvgPool2D,concatenate
 from keras import Model
 from tensorflow import keras
 
@@ -209,7 +208,7 @@ class SpeedNet:
         op_flow_2=TimeDistributed(BatchNormalization())(op_flow_2)
         op_flow_2=TimeDistributed(Dropout(0.5))(op_flow_2)
 
-        op_flow_2=TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=None, padding="same"))
+        op_flow_2=TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=None, padding="same"))(op_flow_2)
 
         op_flow_2_max=TimeDistributed(GlobalMaxPool2D())(op_flow_2)
         op_flow_2_avg=TimeDistributed(GlobalAvgPool2D())(op_flow_2)
