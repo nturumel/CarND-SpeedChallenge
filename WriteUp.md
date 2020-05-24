@@ -60,26 +60,21 @@ I used to types of augmentation:
 
    The frames of the images fed into the opflow calculator were first augmented by randomly changing their brightness.
 
-    `def augment_brightness(self,prev,nxt):`
+   
 
-   ​    `brightness=np.random.uniform(0.5,1.5)`
-
-   ​    `imgPrev = Image.fromarray(prev)`
-
-   ​    `imgNxt = Image.fromarray(nxt)`
-
-   ​    `frame_augmented_prev = ImageEnhance.Brightness(imgPrev).enhance(brightness)`
-
-   ​    `frame_augmented_prev = np.array(frame_augmented_prev)`
-
-   ​    `frame_augmented_nxt = ImageEnhance.Brightness(imgNxt).enhance(brightness)`
-
-   ​    `frame_augmented_nxt = np.array(frame_augmented_nxt)`
-
-   ​    `return frame_augmented_prev,frame_augmented_nxt`
-
-   These provide a way to deal with sudden changes in brightness. However the performance of a model trained with augmentation was problematic, so it was dropped.
-
+   ```python
+def augment_brightness(self,prev,nxt):
+       brightness=np.random.uniform(0.5,1.5)
+    imgPrev = Image.fromarray(prev)
+       imgNxt = Image.fromarray(nxt)
+    frame_augmented_prev = 		               		ImageEnhance.Brightness(imgPrev).enhance(brightness)
+       frame_augmented_prev = np.array(frame_augmented_prev)
+    frame_augmented_nxt = ImageEnhance.Brightness(imgNxt).enhance(brightness)
+       frame_augmented_nxt = np.array(frame_augmented_nxt)
+    return frame_augmented_prev,frame_augmented_nxt
+   ```
+These provide a way to deal with sudden changes in brightness. However the performance of a model trained with augmentation was problematic, so it was dropped.
+   
 2. #### Flipping the video:
 
    The second augmentation was achieved by flipping the entire video from left to right. It stood to reason that a flipped video would and should have the exact same speed values for each frame and a good model should be able to detect that. This double  the amount of data we have.
