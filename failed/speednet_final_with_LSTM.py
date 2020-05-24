@@ -19,7 +19,8 @@ from PIL import Image, ImageEnhance
 from tensorflow.keras.optimizers import Adam
 from tensorflow import keras
 
-import DataGenerator
+
+#import DataGenerator
 
 
 class SpeedNet:
@@ -37,7 +38,6 @@ class SpeedNet:
         self.EPOCHS=args.epoch
         self.W_FILE=args.model
         self.HISTORY=args.history
-        self.split=args.split
         self.split_start=args.split_start
         self.split_end=args.split_end
         self.LR=args.LR
@@ -57,13 +57,13 @@ class SpeedNet:
             if args.resume:
                 self.load_weights()
             #start training session
-            self.train(args.video_file,args.speed_file,args.wipe,self.EPOCHS,self.BATCH_SIZE,args.augment)
+            self.train(args.video_file,args.speed_file,args.split,args.wipe,self.EPOCHS,self.BATCH_SIZE,args.augment)
 
         #test the model
         elif args.mode == "test":
             self.test(args.video_file,args.speed_file)
 
-        elif args.mode == "predict":
+        elif args.mode == "play":
             self.play(args.video_file,args.speed_file)
 
 
@@ -214,49 +214,38 @@ class SpeedNet:
             print ("Please train model")
             return False
 
-    def train(self,X_src,Y_src, wipe,n_epochs = 50, batch_size= 32,augment=False):
+    def train(self,X_src,Y_src,val_split, wipe,n_epochs = 50, batch_size= 32,augment=False):
         #load data
         X,X_augment,Y = self.prep_data(X_src,Y_src,wipe = wipe,augment=augment)
-
         X = X[:,:,:,[0,2]] #extract channels with data
         X_augment=X_augment[:,:,:,[0,2]]
 
-        FrameIndices,SpeedIndices=DataGenerator.generate_indices(self.HISTORY,len(Y))
-
-        train_size=len(SpeedIndices)
-        train_indexes=[]
-        val_indexes=[]
-
-        if self.split_start and self.split_end:
-          All_indices=np.arange(int(train_size))
-          train_indexes.extend(All_indices[:self.split_start])
-          train_indexes.extend(All_indices[self.split_end:])
-          val_indexes=All_indices[self.split_start:self.split_end]
-        else:
-          train_indexes, val_indexes=train_test_split(np.arange(int(train_size)), shuffle = False, test_size = self.split)
-
-        print(train_size,'Training data size per Aug')
-        print(len(train_indexes),'Train indices size')
-        print(len(val_indexes),'Val indices size')
-
+        if augment:
+            Xtemp=[]
+            for i in range(len(X)):
+                random=np.random.random_integers(1,15)
+                if random%3==0:
+                    Xtemp.append(X_augment[i])
+                else:
+                    Xtemp.append(X[i])
+            X=Xtemp
+            X=np.array(X,dtype='uint8')
+        X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=val_split, random_state=42)
+        X_test = X_test[:,None,...]
+        X_train = X_train[:,None,...]
+        #train model
         print ("Starting training")
         checkpoint = ModelCheckpoint(self.W_FILE, monitor='loss', verbose=1,
           save_best_only=True, mode='auto', period=1)
 
-        train_generator=DataGenerator.DataGenerator(batch_size,X,
-            X_augment,Y,FrameIndices,SpeedIndices,train_size,
-            indexes=train_indexes,validation_mode=False,augment=augment)
 
-        valid_generator=DataGenerator.DataGenerator(batch_size,X,
-            X_augment,Y,FrameIndices,SpeedIndices,train_size,
-            indexes=val_indexes,validation_mode=True,augment=False)
-
-        self.model.fit_generator(train_generator,
-                    validation_data=valid_generator,
+        self.model.fit(X_train, y_train,
+                    batch_size=batch_size,
                     epochs=n_epochs,
                     # We pass some validation for
                     # monitoring validation loss and metrics
                     # at the end of each epoch
+                    validation_data=(X_test, y_test),
                     callbacks=[checkpoint])
 
         #save weights
@@ -266,47 +255,42 @@ class SpeedNet:
         #load data
         X_test,X_test_augment,Y_test = self.prep_data(X_src,Y_src,augment=False)
         X_test = X_test[:,:,:,[0,2]] #extract channels with data
-        X_test = X_test[:,None,...]
-        FrameIndices,SpeedIndices=DataGenerator.generate_indices(self.HISTORY,len(X_test))
-        train_size=len(SpeedIndices)
-        test_indexes=np.arange(int(train_size))
-        test_generator=DataGenerator.DataGenerator(batch_size,
-            X,X_augment,Y,FrameIndices,SpeedIndices,train_size,
-            indexes=test_indexes,validation_mode=True,augment=False)
+
         #load weights
         ret = self.load_weights()
         if ret:
             #test the model on unseen data
             print ("Starting testing")
-            print (self.model.evaluate_generator(test_generator))
+            X_test = X_test[:,None,...]
+            print (self.model.evaluate(X_test,Y_test))
             print ("Done testing")
         else:
             print ("Test failed to complete with improper weights")
 
-    def predict(self,X_src, Y_out):
+    def play(self, X_src, Y_src):
+        print ("Starting testing")
+        #load data
         X,X_augment,Y = self.prep_data(X_src,Y_src,augment=False)
-        ret=self.load_weights()
+        rec = cv2.VideoWriter('flow.avi',int(cv2.cv.CV_FOURCC('M','J','P','G')),48,(300,300))
+        #load weights
+        ret = self.load_weights()
         if ret:
-            predictions=[]
-            FrameIndices,SpeedIndices=DataGenerator.generate_indices(self.HISTORY,len(X))
-            train_size=len(SpeedIndices)
-            print("Number of frames to be predicted: ",train_size)
-            for sequence in FrameIndices:
-                framesequence=[]
-                for index in sequence:
-                    frame=X[index]
-                    framesequence.append(frame)
-                    framesequence = framesequence[None,...]
-                    speed_predict=self.model.predict(framesequence)
-                    sys.stdout.write("\rFor Frame: " + SpeedIndices[sequence[0]]+1 + " Predicted speed: "+ speed_predict )
-                    predictions.append(speed_predict)
-
-            with open(Y_out, 'w') as filehandle:
-                for listitem in predictions:
-                    filehandle.write('%f\n' % listitem)
+            #test the model on unseen data
+            for x,y in zip(X,Y):
+                flow = ((x + 1) * 127.5).astype('uint8')
+                flow = cv2.cvtColor(flow,cv2.COLOR_HSV2BGR)
+                flow = cv2.resize(flow,(300,300))
+                pred_y = self.model.predict(np.array([x[:,:,[0,2]]]))[0,0]
+                error = abs(y-pred_y)
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                cv2.putText(flow,"Predicted Speed: " + str(pred_y),(5,15),font, 0.55,(255,255,255),2)
+                cv2.putText(flow,"Actual Speed: " + str(y),(5,45),font, 0.55,(255,255,255),2)
+                cv2.putText(flow,"Error: " + str(error),(5,75),font, 0.55,(255,255,255),2)
+                rec.write(flow)
+            rec.release()
+            print ("Done predicting")
         else:
-            print("Prediction failed to complete with improper weights")
-
+            print ("Prediction failed to complete with improper weights")
 
 
 if __name__=="__main__":
@@ -334,7 +318,7 @@ if __name__=="__main__":
     parser.add_argument("--augment", action='store_true',
                         help="clears existing preprocessed data")
 
-    parser.add_argument("--mode", choices=["train", "test", "predict"], default='train',
+    parser.add_argument("--mode", choices=["train", "test", "play"], default='train',
                         help="Train, Test, or Play model")
     parser.add_argument("--resume", action='store_true',
                         help="resumes training")
