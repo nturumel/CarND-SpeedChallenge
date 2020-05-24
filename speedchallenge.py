@@ -4,7 +4,9 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
 from keras.layers import Input, TimeDistributed, LSTM
+from keras.layers import BatchNormalization
 from keras import Model
+
 
 import numpy as np
 import cv2
@@ -17,7 +19,7 @@ from sklearn.model_selection import train_test_split
 from keras.callbacks import ModelCheckpoint
 from PIL import Image, ImageEnhance
 from tensorflow.keras.optimizers import Adam
-from tensorflow import keras
+
 
 import DataGenerator
 
@@ -177,14 +179,23 @@ class SpeedNet:
 
         print ("Compiling Model")
         op_flow_inp=Input(shape=(self.HISTORY,self.DSIZE[0],self.DSIZE[1],2))
+
         op_flow=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
         op_flow=TimeDistributed(Activation('relu'))(op_flow)
+        op_flow=BatchNormalization(axis=...)(op_flow)
         op_flow=TimeDistributed(Dropout(0.5))(op_flow)
+
         op_flow=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
         op_flow=TimeDistributed(Activation('relu'))(op_flow)
+        op_flow=BatchNormalization(axis=...)(op_flow)
+        op_flow=TimeDistributed(Dropout(0.5))(op_flow)
+
         op_flow=TimeDistributed(Convolution2D(128, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
         op_flow=TimeDistributed(Activation('relu'))(op_flow)
+        op_flow=BatchNormalization(axis=...)(op_flow)
         op_flow=TimeDistributed(Dropout(0.5))(op_flow)
+
+
         conc=TimeDistributed(Flatten())(op_flow)
 
         conc = LSTM(128)(conc)
