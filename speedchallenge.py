@@ -6,7 +6,7 @@ from keras.callbacks import EarlyStopping
 from keras.layers import Input, TimeDistributed, LSTM
 from keras.layers import BatchNormalization
 from keras import Model
-
+from tensorflow import keras
 
 import numpy as np
 import cv2
