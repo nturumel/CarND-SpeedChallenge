@@ -7,12 +7,11 @@ For someone like me starting out in AI and ML and not so proficient in python it
 ## Data Analysis:
 One of the biggest challenges of the project was the limited availability of data for training.  There was a single mp4 video with accompanying speed data.  The video consists of 20400 frames and the speed vs frame graph is as follows:
 
-
-<img src=".\SpeedData.png" alt="SpeedData" style="zoom:%;" /> 
+<img src=".\pics\SpeedData.png" alt="SpeedData" style="zoom:%;" /> 
 
 The average speed is 12.18 and the speed varies from 30 to 0. Also we can see that from frame 7700 to 12100 there is a precipitous drop of velocity. This will prove to be useful later as it will be used as our validation data once the model architecture is finalized.
 
-<img src=".\ValidData.png" alt="ValidData" style="zoom:100%;" />
+<img src=".\pics\ValidData.png" alt="ValidData" style="zoom:100%;" />
 
 
 
@@ -20,11 +19,11 @@ The average speed is 12.18 and the speed varies from 30 to 0. Also we can see th
 
 #### 	Speed Histogram:
 
-#### 	![SpeedDataHistogram](.\SpeedDataHistogram.png)
+#### 	![SpeedDataHistogram](.\pics\SpeedDataHistogram.png)
 
 #### 	Validation Histogram:
 
-#### 	![](.\ValidDataHistogram.png) 
+#### 	![](.\pics\ValidDataHistogram.png) 
 
 So as you can see we have covered a lot of ground in our validation set and our validation set is well selected.
 
