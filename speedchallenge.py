@@ -209,6 +209,8 @@ class SpeedNet:
         op_flow_2=TimeDistributed(Dropout(0.5))(op_flow_2)
 
         op_flow_2=TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=None, padding="same"))(op_flow_2)
+        op_flow_2=TimeDistributed(BatchNormalization())(op_flow_2)
+        op_flow_2=TimeDistributed(Dropout(0.5))(op_flow_2)
 
         op_flow_2_max=TimeDistributed(GlobalMaxPool2D())(op_flow_2)
         op_flow_2_avg=TimeDistributed(GlobalAvgPool2D())(op_flow_2)
