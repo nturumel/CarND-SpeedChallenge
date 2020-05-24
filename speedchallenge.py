@@ -3,8 +3,8 @@ from keras.layers import Dropout, Flatten, Dense, Activation
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
-from keras.layers import Input, TimeDistributed, LSTM
-from keras.layers import BatchNormalization
+from keras.layers import Input, TimeDistributed, LSTM,GlobalMaxPool2D,GlobalAveragePooling2D,
+    BatchNormalization
 from keras import Model
 from tensorflow import keras
 
