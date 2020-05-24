@@ -7,12 +7,12 @@ For someone like me starting out in AI and ML and not so proficient in python it
 ## Data Analysis:
 One of the biggest challenges of the project was the limited availability of data for training.  There was a single mp4 video with accompanying speed data.  The video consists of 20400 frames and the speed vs frame graph is as follows:
 
-<<<<<<< HEAD
-<img src=".\SpeedData.png" alt="SpeedData" style="zoom:75%;" />
+
+<img src=".\SpeedData.png" alt="SpeedData" style="zoom:%;" /> 
 
 The average speed is 12.18 and the speed varies from 30 to 0. Also we can see that from frame 7700 to 12100 there is a precipitous drop of velocity. This will prove to be useful later as it will be used as our validation data once the model architecture is finalized.
 
-<img src=".\ValidData.png" alt="ValidData" style="zoom:75%;" />
+<img src=".\ValidData.png" alt="ValidData" style="zoom:100%;" />
 
 
 
@@ -28,16 +28,6 @@ The average speed is 12.18 and the speed varies from 30 to 0. Also we can see th
 
 So as you can see we have covered a lot of ground in our validation set and our validation set is well selected.
 
-=======
-<img src="C:\Users\Nihar\Google Drive\speedchallenge\SpeedData.png" alt="SpeedData" style="zoom:75%;" />
-
-The average speed is 12.18 and the speed varies from 30 to 0. Also we can see that from frame 7700 to 12100 there is a precipitous drop of velocity. This fact will prove to be useful later as that will be used as our validation data once the model architecture is finalized.
-
-<img src="C:\Users\Nihar\Google Drive\speedchallenge\ValidData.png" alt="ValidData" style="zoom:75%;" />
-
-
-
->>>>>>> ab2c4edc017d3df45f82298dd05835a0ed57afe8
 ## Approaches:
 
 Based on my research there seem to be two main approaches to solving the problem.  They are the following:
@@ -98,7 +88,6 @@ I used to types of augmentation:
 
 ## Final Model Architecture:
 
-<<<<<<< HEAD
 One of the biggest challenges of the project was the limited availability of data for training.  There
 
 was also a huge problem of overfitting that I wanted to avoid. Hence, I added dropouts, batch normalizations and also widened the layers.
@@ -188,14 +177,3 @@ The biggest problem however is if suddenly all objects in the previous frame dis
 One way to combat this problem that I considered was to look ahead in time and predict the speed of the median frame based on the frames around it.
 
 However this involves looking ahead in time and is not possible physically speaking.
-=======
-One of the biggest challenges of the project was the limited availability of data for training.  There 
-
-## Model Results and Performance:
-
-One of the biggest challenges of the project was the limited availability of data for training.  There 
-
-## Potential Problems:
-
-One of the biggest challenges of the project was the limited availability of data for training.  There 
->>>>>>> ab2c4edc017d3df45f82298dd05835a0ed57afe8
