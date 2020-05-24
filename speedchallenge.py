@@ -1,4 +1,4 @@
-from keras.models import Sequential
+op_flow_1from keras.models import Sequential
 from keras.layers import Dropout, Flatten, Dense, Activation
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import Adam
@@ -180,23 +180,47 @@ class SpeedNet:
         print ("Compiling Model")
         op_flow_inp=Input(shape=(self.HISTORY,self.DSIZE[0],self.DSIZE[1],2))
 
-        op_flow=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
-        op_flow=TimeDistributed(Activation('relu'))(op_flow)
-        op_flow=BatchNormalization()(op_flow)
-        op_flow=TimeDistributed(Dropout(0.5))(op_flow)
+        # 1 layer -----------------------------
+        op_flow_1=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
+        op_flow_1=TimeDistributed(Activation('relu'))(op_flow_1)
+        op_flow_1=TimeDistributed(BatchNormalization())(op_flow_1)
+        op_flow_1=TimeDistributed(Dropout(0.5))(op_flow_1)
 
-        op_flow=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
-        op_flow=TimeDistributed(Activation('relu'))(op_flow)
-        op_flow=BatchNormalization()(op_flow)
-        op_flow=TimeDistributed(Dropout(0.5))(op_flow)
+        op_flow_1=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_1)
+        op_flow_1=TimeDistributed(Activation('relu'))(op_flow_1)
+        op_flow_1=TimeDistributed(BatchNormalization())(op_flow_1)
+        op_flow_1=TimeDistributed(Dropout(0.5))(op_flow_1)
 
-        op_flow=TimeDistributed(Convolution2D(128, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
-        op_flow=TimeDistributed(Activation('relu'))(op_flow)
-        op_flow=BatchNormalization()(op_flow)
-        op_flow=TimeDistributed(Dropout(0.5))(op_flow)
+        op_flow_1=TimeDistributed(Convolution2D(128, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_1)
+        op_flow_1=TimeDistributed(Activation('relu'))(op_flow_1)
+        op_flow_1=TimeDistributed(BatchNormalization())(op_flow_1)
+        op_flow_1=TimeDistributed(Dropout(0.5))(op_flow_1)
+        op_flow_1_out=TimeDistributed(Flatten())(op_flow_1)
+        #----------------------------------------
+
+        # 2 layer -----------------------------
+        op_flow_2=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
+        op_flow_2=TimeDistributed(Activation('relu'))(op_flow_2)
+        op_flow_2=TimeDistributed(BatchNormalization())(op_flow_2)
+        op_flow_2=TimeDistributed(Dropout(0.5))(op_flow_2)
+
+        op_flow_2=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_2)
+        op_flow_2=TimeDistributed(Activation('relu'))(op_flow_2)
+        op_flow_2=TimeDistributed(BatchNormalization())(op_flow_2)
+        op_flow_2=TimeDistributed(Dropout(0.5))(op_flow_2)
+
+        op_flow_2=TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=None, padding="same"))
+
+        op_flow_2_max=TimeDistributed(GlobalMaxPool2D())(op_flow_2)
+        op_flow_2_avg=TimeDistributed(GlobalAvgPool2D())(op_flow_2)
+
+        op_flow_2_max_out=TimeDistributed(Flatten())(op_flow_2_max)
+        op_flow_2_avg_out=TimeDistributed(Flatten())(op_flow_2_avg)
+        #----------------------------------------
 
 
-        conc=TimeDistributed(Flatten())(op_flow)
+
+        conc=concatenate([op_flow_2_max_out,op_flow_2_avg_out,op_flow_1_out])
 
         conc = LSTM(128)(conc)
         conc=Activation('relu')(conc)
@@ -208,6 +232,7 @@ class SpeedNet:
 
         opt = keras.optimizers.Adam(learning_rate=self.LR)
         model.compile(optimizer=opt, loss='mse')
+        print(model.summary())
         self.model= model
 
 
