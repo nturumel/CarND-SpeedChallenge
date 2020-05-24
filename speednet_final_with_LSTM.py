@@ -239,6 +239,10 @@ class SpeedNet:
         print(len(train_indexes),'Train indices size')
         print(len(val_indexes),'Val indices size')
 
+        print (" This is the range of train: ",train_indexes)
+        print (" This is the range of val: ",val_indexes)
+
+
         print ("Starting training")
         checkpoint = ModelCheckpoint(self.W_FILE, monitor='loss', verbose=1,
           save_best_only=True, mode='auto', period=1)
