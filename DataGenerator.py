@@ -8,7 +8,7 @@ import shutil
 import csv
 import os
 import keras
-
+import pickle
 
 def generate_indices(time_history,train_size):
 # All we need to do is store the indices
@@ -21,21 +21,21 @@ def generate_indices(time_history,train_size):
         for i in range(0,time_history):
             tempFrame.append(i+j)
         if time_history==2:
-            SpeedIndices.append(min(tempFrame))
+            SpeedIndices.append(max(tempFrame))
         else:
-            SpeedIndices.append(median(tempFrame))
+            SpeedIndices.append(max(tempFrame))
         FrameIndices.append(tempFrame)
     return FrameIndices,SpeedIndices
 
 class DataGenerator(keras.utils.Sequence):
-    def __init__(self, batch_size, frame_paths,frame_paths_augmented,speed_list,FrameIndices,SpeedIndices,train_size,indexes = None, validation_mode = False):
+    def __init__(self, batch_size, frame,frame_augmented,speed_list,FrameIndices,SpeedIndices,train_size,indexes = None, validation_mode = False,augment=False):
 
-        self.frame_paths = frame_paths
-        self.frame_paths_augmented = frame_paths_augmented
+        self.frame_augmented = frame_augmented
+        self.frame = frame
         self.speed_list=speed_list
         self.FrameIndices=FrameIndices
         self.SpeedIndices=SpeedIndices
-
+        self.augment=augment
 
         if indexes is None:
             with indexes is None:
@@ -78,14 +78,11 @@ class DataGenerator(keras.utils.Sequence):
             frames=[]
             for frameIndex in self.FrameIndices[index]:
                 r=(np.random.random_integers(1,100))
-                if r%3==0:
-                    frame=cv.imread(self.frame_paths[frameIndex])
-                    frames.append(frame)
+                if r%3==0 and self.augment:
+                  frames.append(self.frame_augmented[frameIndex])
                 else:
-                    frame=cv.imread(self.frame_paths_augmented[frameIndex])
-                    frames.append(frame)
+                  frames.append(self.frame[frameIndex])
             op_flow.append(frames)
-            
         op_flow=np.array(op_flow)
         speeds=np.array(speeds)
         return [op_flow,speeds]

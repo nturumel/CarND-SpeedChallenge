@@ -12,14 +12,22 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 
 import keras
-from keras.layers import Lambda,Conv2D, MaxPool2D, CuDNNGRU, GlobalMaxPool2D, Reshape, GRU, \
-concatenate, Input, TimeDistributed , Dense, BatchNormalization, SpatialDropout2D, SpatialDropout1D, Dropout, GlobalAvgPool2D, Flatten
+from keras.layers import Lambda,Conv2D,Convolution2D, MaxPool2D,MaxPooling2D, CuDNNGRU, GlobalMaxPool2D, Reshape, GRU,LSTM, \
+concatenate, Input, TimeDistributed ,ELU, Dense,Activation, BatchNormalization, SpatialDropout2D, SpatialDropout1D, Dropout, GlobalAvgPool2D, Flatten
 from keras import Model
 from keras.applications import Xception
 import keras.backend as k
 from sklearn.model_selection import train_test_split
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from sklearn.metrics import mean_squared_error
+from keras.layers import InputLayer
+from keras.models import Sequential
+from keras.layers import Conv3D
+from keras.layers import Reshape
+from keras.layers import Lambda
+from tensorflow.keras.optimizers import Nadam
+import pickle
+
 
 import DataGenerator
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -39,8 +47,19 @@ class finalSpeedchallenge:
         return frame,frame_augmented
 
     def optflowProcess(self,frame1,frame2):
+        
+        '''
+        image_current = np.array(frame1)
+        image_next = np.array(frame2)
+        gray_current = cv.cvtColor(image_current, cv.COLOR_RGB2GRAY)
+        gray_next = cv.cvtColor(image_next, cv.COLOR_RGB2GRAY)
+        flow = cv.calcOpticalFlowFarneback(gray_current, gray_next, None, 0.5, 1, 15, 2, 5, 1.3, 0)
+        
+        '''
+        
         flow = np.zeros_like(frame1)
         prev = cv.cvtColor(frame1,cv.COLOR_BGR2GRAY)
+
         nxt = cv.cvtColor(frame2,cv.COLOR_BGR2GRAY)
         flow_data = cv.calcOpticalFlowFarneback(prev, nxt, None,0.4, 1, 12, 2, 8, 1.2, 0)
         #convert data to hsv
@@ -75,14 +94,16 @@ class finalSpeedchallenge:
              count = 0
              while success:
                  if (count % 500 == 0) and count > 0:
-                     print(count)
+                     print(count),
 
                  success,frame2=vidcap.read()
                  if success:
                      frame2,frame2_augmented=self.process_frame(frame2)
                      flow=self.optflowProcess(frame1, frame2)
+                     name=self.optflowProcess_dir[0] + '/' + str(count)
+                     arr=np.array(flow)
                      cv.imwrite(self.optflowProcess_dir[0] + '/' + str(count) + ".png", flow)
-                     opflow.append(self.optflowProcess_dir[0] + '/' + str(count) + ".png")
+                     opflow.append(name)
 
                      frame1=frame2
                      count+=1
@@ -92,6 +113,7 @@ class finalSpeedchallenge:
 
 
              self.opflow=opflow
+             self.op_flow.sort()
              frame_cnt=count
              print("\ndone converting " + str(frame_cnt) + " frames")
 
@@ -136,12 +158,16 @@ class finalSpeedchallenge:
                  if success:
                      frame2,frame2_augmented=self.process_frame(frame2)
                      flow=self.optflowProcess(frame1, frame2)
+                     name=self.optflowProcess_dir[0] + '/' + str(count)
+                     arr=np.array(flow)
                      cv.imwrite(self.optflowProcess_dir[0] + '/' + str(count) + ".png", flow)
-                     opflow.append(self.optflowProcess_dir[0] + '/' + str(count) + ".png")
+                     opflow.append(name)
 
                      flow_augmented=self.optflowProcess(frame1_augmented, frame2_augmented)
+                     name=self.optflowProcess_dir[1] + '/' + str(count)
+                     arr=np.array(flow_augmented)
                      cv.imwrite(self.optflowProcess_dir[1] + '/' + str(count) + ".png", flow_augmented)
-                     opflow_augmented.append(self.optflowProcess_dir[1] + '/' + str(count) + ".png")
+                     opflow_augmented.append(name)
 
                      frame1=frame2
                      frame1_augmented=frame2_augmented
@@ -153,6 +179,8 @@ class finalSpeedchallenge:
 
              self.opflow=opflow
              self.opflow_augmented=opflow_augmented
+             self.opflow.sort()
+             self.opflow_augmented.sort()
              frame_cnt=count
 
         else:
@@ -179,16 +207,19 @@ class finalSpeedchallenge:
         self.DSIZE=(0.5,0.5)
         self.W_FILE="finalSolution_opFlow_2frames.h5"
         self.EPOCHS=2
-        self.BATCH_SIZE=10
+        self.BATCH_SIZE=30
         self.HISTORY=2
         self.opflow=[]
         self.opflow_augmented=[]
         self.split=0.2
+        self.split_start=0
+        self.split_end=0
 
     def main(self, args):
         
         self.EPOCHS=args.epoch
         self.W_FILE=args.model
+        self.HISTORY=args.history
         if args.split:
             self.split=args.split
         if args.split_start and args.split_end:
@@ -216,44 +247,50 @@ class finalSpeedchallenge:
     def create_model(self):
         print("Compliling Model")
 
-        op_flow_inp=Input(shape=(self.HISTORY,100,320,3))
+        op_flow_inp=Input(shape=(self.HISTORY,100,320,2))
+
+
         filter_size = (3,3)
-
-
-        #op_flow=TimeDistributed(Lambda(lambda x: (x / 255.0) - 0.5))(op_flow_inp)
-        # add a cropping layers
-        # may already be added
-        # focus on cropping and spatial droput
-
-        op_flow = TimeDistributed(BatchNormalization())(op_flow_inp)
-        op_flow = TimeDistributed(Dropout(.3))(op_flow)
+        op_flow = TimeDistributed(Dropout(.5))(op_flow_inp)
         op_flow = TimeDistributed(Conv2D(4, filter_size, activation = "relu", data_format = "channels_last"))(op_flow)
         op_flow = TimeDistributed(MaxPool2D())(op_flow)
+        op_flow = TimeDistributed(BatchNormalization())(op_flow)
+        op_flow = TimeDistributed(Dropout(.5))(op_flow)
+        
         op_flow = TimeDistributed(Conv2D(8, filter_size, activation = "relu", data_format = "channels_last"))(op_flow)
         op_flow = TimeDistributed(MaxPool2D())(op_flow)
+        op_flow = TimeDistributed(BatchNormalization())(op_flow)
+        op_flow = TimeDistributed(Dropout(.5))(op_flow)
+        
         op_flow = TimeDistributed(Conv2D(32, filter_size, activation = "relu", data_format = "channels_last"))(op_flow)
         op_flow = TimeDistributed(MaxPool2D())(op_flow)
+        op_flow = TimeDistributed(BatchNormalization())(op_flow)
+        op_flow = TimeDistributed(Dropout(.5))(op_flow)
+        
         op_flow = TimeDistributed(Conv2D(64, filter_size, activation = "relu", data_format = "channels_last"))(op_flow)
         op_flow = TimeDistributed(Dropout(.3))(op_flow)
         op_flow = TimeDistributed(MaxPool2D())(op_flow)
         op_flow = TimeDistributed(Conv2D(128, filter_size, activation = "relu", data_format = "channels_last"))(op_flow)
         op_flow = TimeDistributed(MaxPool2D())(op_flow)
+        op_flow = TimeDistributed(BatchNormalization())(op_flow)
+        op_flow = TimeDistributed(Dropout(.5))(op_flow)
+        
         op_flow_max = TimeDistributed(GlobalMaxPool2D())(op_flow)
         op_flow_avg = TimeDistributed(GlobalAvgPool2D())(op_flow)
-
         conc=concatenate([op_flow_max,op_flow_avg],axis=1)
-
-        conc = SpatialDropout1D(.2)(conc)
+        conc = SpatialDropout1D(.5)(conc)
+        
         conc = GRU(256)(conc)
         conc = Dense(100, activation = "relu")(conc)
-        conc = Dropout(.2)(conc)
+        conc = Dropout(.5)(conc)
         conc = Dense(50, activation = "relu")(conc)
-        conc = Dropout(.1)(conc)
+        conc = Dropout(.5)(conc)
         result = Dense(1, activation='linear')(conc)
-
+        
         model = Model(inputs=op_flow_inp, outputs=[result])
         print(model.summary())
-        model.compile(loss="mse", optimizer='adam')
+        adam = Nadam()
+        model.compile(optimizer='adam', loss='mse')
         self.model= model
 
     def load_weights(self):
@@ -291,26 +328,13 @@ class finalSpeedchallenge:
         else:
           train_indexes, val_indexes=train_test_split(np.arange(int(train_size)), shuffle = False, test_size = self.split)
 
-        #---------remove--------------
-        '''
-        np.random.shuffle(train_indexes)
-        np.random.shuffle(val_indexes)
-        '''
-        #---------shuffled at the end of each epoch
-
         print(train_size,'Training data size per Aug')
         print(len(train_indexes),'Train indices size')
         print(len(val_indexes),'Val indices size')
         #---------------Remove----------------
-        maxIndexT=max(train_indexes)
-        maxIndexV=max(val_indexes)
-        print("MaxIndexes")
-        print(maxIndexT,maxIndexV)
-
-        print("MinIndexes")
-        minIndexT=min(train_indexes)
-        minIndexV=min(val_indexes)
-        print(minIndexT,minIndexV)
+        print("First Frame Index: ",FrameIndices[0])
+        print("First Speed Index: ",SpeedIndices[0])
+        
 
         print('Checking if within indices:')
         frame=cv.imread(self.opflow[FrameIndices[-1][-1]])
@@ -321,7 +345,7 @@ class finalSpeedchallenge:
         #Training
         train_generator=DataGenerator.DataGenerator(self.BATCH_SIZE,self.opflow,self.opflow_augmented,self.speed_data,FrameIndices,SpeedIndices,train_size,indexes=train_indexes,validation_mode=False)
         valid_generator=DataGenerator.DataGenerator(self.BATCH_SIZE,self.opflow,self.opflow_augmented,self.speed_data,FrameIndices,SpeedIndices,train_size,indexes=val_indexes,validation_mode=False)
-        self.model.fit_generator(train_generator, validation_data=valid_generator, epochs = self.EPOCHS,callbacks=[EarlyStopping(patience=3), ModelCheckpoint(filepath=self.W_FILE, save_weights_only=False)])
+        self.model.fit_generator(train_generator, validation_data=valid_generator, epochs = self.EPOCHS,callbacks=[EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=3), ModelCheckpoint(filepath=self.W_FILE, save_weights_only=False)])
 
     def predict(self,X_src, Y_out):
         #load data
