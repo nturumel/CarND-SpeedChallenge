@@ -336,7 +336,7 @@ class SpeedNet:
                     predictions.append(speed_predict)
 
             #adjust for time history:
-            Y_test=[self.HISTORY-1:]
+            Y_test=Y_test[self.HISTORY-1:]
             mean_square=mean_squared_error(predictions,Y_test)
             print("The mean square error is: ",mean_square)
             print ("Done testing")
