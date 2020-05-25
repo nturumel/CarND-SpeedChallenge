@@ -65,7 +65,7 @@ class SpeedNet:
             self.test(args.video_file,args.speed_file)
 
         elif args.mode == "predict":
-            self.play(args.video_file,args.speed_file)
+            self.predict(args.video_file,args.speed_file)
 
 
     def process_frame(self,frame):
@@ -307,12 +307,11 @@ class SpeedNet:
         #load data
         X_test,X_test_augment,Y_test = self.prep_data(X_src,Y_src,augment=False)
         X_test = X_test[:,:,:,[0,2]] #extract channels with data
-        X_test = X_test[:,None,...]
         FrameIndices,SpeedIndices=DataGenerator.generate_indices(self.HISTORY,len(X_test))
         train_size=len(SpeedIndices)
         test_indexes=np.arange(int(train_size))
-        test_generator=DataGenerator.DataGenerator(batch_size,
-            X,X_augment,Y,FrameIndices,SpeedIndices,train_size,
+        test_generator=DataGenerator.DataGenerator(self.BATCH_SIZE,
+            X_test,X_test_augment,Y_test,FrameIndices,SpeedIndices,train_size,
             indexes=test_indexes,validation_mode=True,augment=False)
         #load weights
         ret = self.load_weights()
@@ -376,7 +375,7 @@ if __name__=="__main__":
                         help="clears existing preprocessed data")
 
     parser.add_argument("--mode", choices=["train", "test", "predict"], default='train',
-                        help="Train, Test, or Play model")
+                        help="Train, Test, or predict model")
     parser.add_argument("--resume", action='store_true',
                         help="resumes training")
     parser.add_argument("--wipe", action='store_true',

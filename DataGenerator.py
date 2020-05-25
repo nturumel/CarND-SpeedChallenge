@@ -78,7 +78,7 @@ class DataGenerator(keras.utils.Sequence):
             frames=[]
             for frameIndex in self.FrameIndices[index]:
                 r=(np.random.random_integers(1,100))
-                if r%3==0 and self.augment:
+                if r%2==0 and self.augment:
                   frames.append(self.frame_augmented[frameIndex])
                 else:
                   frames.append(self.frame[frameIndex])
