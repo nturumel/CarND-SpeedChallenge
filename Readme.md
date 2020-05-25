@@ -66,15 +66,15 @@ I used to types of augmentation:
    
 
    ```python
-def augment_brightness(self,prev,nxt):
-       brightness=np.random.uniform(0.5,1.5)
-    imgPrev = Image.fromarray(prev)
-       imgNxt = Image.fromarray(nxt)
-    frame_augmented_prev = ImageEnhance.Brightness(imgPrev).enhance(brightness)
-       frame_augmented_prev = np.array(frame_augmented_prev)
-    frame_augmented_nxt = ImageEnhance.Brightness(imgNxt).enhance(brightness)
-       frame_augmented_nxt = np.array(frame_augmented_nxt)
-    return frame_augmented_prev,frame_augmented_nxt
+   def augment_brightness(self,prev,nxt):
+          brightness=np.random.uniform(0.5,1.5)
+       imgPrev = Image.fromarray(prev)
+          imgNxt = Image.fromarray(nxt)
+       frame_augmented_prev = ImageEnhance.Brightness(imgPrev).enhance(brightness)
+          frame_augmented_prev = np.array(frame_augmented_prev)
+       frame_augmented_nxt = ImageEnhance.Brightness(imgNxt).enhance(brightness)
+          frame_augmented_nxt = np.array(frame_augmented_nxt)
+       return frame_augmented_prev,frame_augmented_nxt
    ```
    ```
    
