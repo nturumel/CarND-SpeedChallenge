@@ -2,6 +2,7 @@ from keras.models import Sequential
 from keras.layers import Dropout, Flatten, Dense, Activation
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
 from keras.layers import Input, TimeDistributed, LSTM,GlobalMaxPool2D,BatchNormalization,GlobalAvgPool2D,concatenate
 from keras import Model
@@ -11,13 +12,14 @@ import numpy as np
 import cv2
 import sys
 import os
+import os.path
+from os import path
 import argparse
-import json
 import shutil
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
 from keras.callbacks import ModelCheckpoint
 from PIL import Image, ImageEnhance
-from tensorflow.keras.optimizers import Adam
 
 
 import DataGenerator
@@ -103,11 +105,12 @@ class SpeedNet:
     def prep_data(self,video_file,speed_file,wipe = False,augment=False):
         print ("Prepping data")
         #decode speed data
-        print ("Decoding speed data")
-        f = open(speed_file,'r')
-        data = f.readlines()
-        speed_data = np.array(data[:-1], dtype = 'float32')
-        print ("loaded " + str(len(speed_data)) + " speed entries")
+        if path.exists(speed_file):
+            print ("Decoding speed data")
+            f = open(speed_file,'r')
+            data = f.readlines()
+            speed_data = np.array(data[:-1], dtype = 'float32')
+            print ("loaded " + str(len(speed_data)) + " speed entries")
 
         #clear preprocessed data
         if wipe:
@@ -318,13 +321,28 @@ class SpeedNet:
         if ret:
             #test the model on unseen data
             print ("Starting testing")
-            print (self.model.evaluate_generator(test_generator))
+            predictions=[]
+            FrameIndices,SpeedIndices=DataGenerator.generate_indices(self.HISTORY,len(X_test))
+            train_size=len(SpeedIndices)
+            print("Number of frames to be predicted: ",train_size)
+            for sequence in FrameIndices:
+                framesequence=[]
+                for index in sequence:
+                    frame=X[index]
+                    framesequence.append(frame)
+                    framesequence = framesequence[None,...]
+                    speed_predict=self.model.predict(framesequence)
+                    predictions.append(speed_predict)
+            #adjust for time history:
+            Y_test=[self.HISTORY-1:]
+            mean_square=mean_squared_error(predictions,Y_test)
+            print("The mean square error is: ",mean_square)
             print ("Done testing")
         else:
             print ("Test failed to complete with improper weights")
 
     def predict(self,X_src, Y_out):
-        X,X_augment,Y = self.prep_data(X_src,Y_src,augment=False)
+        X,X_augment,Y = self.prep_data(X_src,Y_out,augment=False)
         ret=self.load_weights()
         if ret:
             predictions=[]
