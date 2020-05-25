@@ -105,6 +105,7 @@ class SpeedNet:
     def prep_data(self,video_file,speed_file,wipe = False,augment=False):
         print ("Prepping data")
         #decode speed data
+        speed_data=[]
         if path.exists(speed_file):
             print ("Decoding speed data")
             f = open(speed_file,'r')
@@ -308,7 +309,7 @@ class SpeedNet:
 
     def test(self,X_src, Y_src):
         #load data
-        X_test,X_test_augment,Y_test = self.prep_data(X_src,Y_src,augment=False)
+        X_test,X_test_augment,Y_test = self.prep_data(X_src,Y_src,augment=False,wipe=True)
         X_test = X_test[:,:,:,[0,2]] #extract channels with data
         FrameIndices,SpeedIndices=DataGenerator.generate_indices(self.HISTORY,len(X_test))
         train_size=len(SpeedIndices)
@@ -343,7 +344,7 @@ class SpeedNet:
             print ("Test failed to complete with improper weights")
 
     def predict(self,X_src, Y_out):
-        X,X_augment,Y = self.prep_data(X_src,Y_out,augment=False)
+        X,X_augment,Y = self.prep_data(X_src,Y_out,augment=False,wipe=True)
         ret=self.load_weights()
         if ret:
             predictions=[]
