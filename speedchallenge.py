@@ -324,15 +324,16 @@ class SpeedNet:
             predictions=[]
             FrameIndices,SpeedIndices=DataGenerator.generate_indices(self.HISTORY,len(X_test))
             train_size=len(SpeedIndices)
-            print("Number of frames to be predicted: ",train_size)
+            print("Number of frames to be evaluated: ",train_size)
             for sequence in FrameIndices:
                 framesequence=[]
                 for index in sequence:
-                    frame=X[index]
+                    frame=X_test[index]
                     framesequence.append(frame)
                     framesequence = framesequence[None,...]
                     speed_predict=self.model.predict(framesequence)
                     predictions.append(speed_predict)
+
             #adjust for time history:
             Y_test=[self.HISTORY-1:]
             mean_square=mean_squared_error(predictions,Y_test)
