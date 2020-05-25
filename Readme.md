@@ -70,12 +70,14 @@ def augment_brightness(self,prev,nxt):
        brightness=np.random.uniform(0.5,1.5)
     imgPrev = Image.fromarray(prev)
        imgNxt = Image.fromarray(nxt)
-    frame_augmented_prev = 		               		ImageEnhance.Brightness(imgPrev).enhance(brightness)
+    frame_augmented_prev = ImageEnhance.Brightness(imgPrev).enhance(brightness)
        frame_augmented_prev = np.array(frame_augmented_prev)
     frame_augmented_nxt = ImageEnhance.Brightness(imgNxt).enhance(brightness)
        frame_augmented_nxt = np.array(frame_augmented_nxt)
     return frame_augmented_prev,frame_augmented_nxt
    ```
+   ```
+   
 These provide a way to deal with sudden changes in brightness. However the performance of a model trained with augmentation was problematic, so it was dropped.
    
 2. #### Flipping the video:
