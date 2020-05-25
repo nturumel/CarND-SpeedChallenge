@@ -157,7 +157,7 @@ class SpeedNet:
                 prev = nxt
                 sys.stdout.write("\rProcessed " + str(i) + " frames" )
                 i+=1
-            print ("\ndone processing " + str(frame_cnt) + "frames")
+            print ("\ndone processing " + str(frame_cnt) + " frames")
         #preprocessed data exists
         else:
             print ("Found preprocessed data")
@@ -331,9 +331,12 @@ class SpeedNet:
                 for index in sequence:
                     frame=X_test[index]
                     framesequence.append(frame)
-                    framesequence = framesequence[None,...]
-                    speed_predict=self.model.predict(framesequence)
-                    predictions.append(speed_predict)
+
+                framesequence=np.array(framesequence)
+                framesequence = framesequence[None,:,:,:,:]
+                speed_predict=self.model.predict(framesequence)
+                speed_predict=float(speed_predict[0])
+                predictions.append(speed_predict)
 
             #adjust for time history:
             Y_test=Y_test[self.HISTORY-1:]
@@ -345,6 +348,7 @@ class SpeedNet:
 
     def predict(self,X_src, Y_out):
         X,X_augment,Y = self.prep_data(X_src,Y_out,augment=False,wipe=True)
+        X=X[:,:,:,[0,2]]
         ret=self.load_weights()
         if ret:
             predictions=[]
@@ -356,10 +360,15 @@ class SpeedNet:
                 for index in sequence:
                     frame=X[index]
                     framesequence.append(frame)
-                    framesequence = framesequence[None,...]
-                    speed_predict=self.model.predict(framesequence)
-                    sys.stdout.write("\rFor Frame: " + SpeedIndices[sequence[0]]+1 + " Predicted speed: "+ speed_predict )
-                    predictions.append(speed_predict)
+
+                framesequence=np.array(framesequence)
+                framesequence = framesequence[None,:,:,:,:]
+                speed_predict=self.model.predict(framesequence)
+                speed_predict=float(speed_predict[0])
+                prediction_str=str(speed_predict)
+                frame_num=str( SpeedIndices[sequence[0]]+1)
+                sys.stdout.write("\rFor Frame: " +frame_num+ " Predicted speed: "+ prediction_str )
+                predictions.append(speed_predict)
 
             with open(Y_out, 'w') as filehandle:
                 for listitem in predictions:

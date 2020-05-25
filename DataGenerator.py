@@ -15,7 +15,6 @@ def generate_indices(time_history,train_size):
     FrameIndices=[]
     SpeedIndices=[]
 
-    print(train_size)
     for j in range(0,train_size-time_history+1):
         tempFrame=[]
         for i in range(0,time_history):
