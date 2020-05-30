@@ -87,7 +87,6 @@ class DataGenerator(keras.utils.Sequence):
             if r%5==0:
                 cv.flip( opflow[-1],1)
 
-
             temp=[]
             for frame_Index in self.FrameIndices[index]:
                 temp.append(self.frame[frame_Index])
