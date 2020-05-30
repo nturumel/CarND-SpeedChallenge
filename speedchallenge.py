@@ -31,7 +31,7 @@ class SpeedNet:
     DSIZE = (100,100)
     W_FILE = "weights.h5"
     EPOCHS = 100
-    BATCH_SIZE = 10
+    BATCH_SIZE = 32
     split_start=0
     split_end=0
     HISTORY=2
