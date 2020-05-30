@@ -82,6 +82,12 @@ class DataGenerator(keras.utils.Sequence):
             else:
                 op_flow.append(self.frame_opflow[self.SpeedIndices[index]])
 
+            # second augmentation flip
+            r=(np.random.random_integers(1,100))
+            if r%5==0:
+                cv.flip( opflow[-1],1)
+
+
             temp=[]
             for frame_Index in self.FrameIndices[index]:
                 temp.append(self.frame[frame_Index])
