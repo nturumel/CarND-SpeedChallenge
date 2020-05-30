@@ -84,7 +84,7 @@ class DataGenerator(keras.utils.Sequence):
 
             # second augmentation flip
             r=(np.random.random_integers(1,100))
-            if r%5==0:
+            if r%5==0 and self.augment:
                 cv.flip( opflow[-1],1)
 
             temp=[]
