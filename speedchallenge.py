@@ -1,3 +1,4 @@
+
 from keras.models import Sequential
 from keras.layers import Dropout, Flatten, Dense, Activation
 from keras.layers.convolutional import Convolution2D, MaxPooling2D
@@ -52,7 +53,9 @@ class SpeedNet:
           self.split_end=args.split_end
 
 
-        self.optflow_dir = [args.video_file.split('.')[0] + "_optflowProcess",args.video_file.split('.')[0] + "_optflowProcess_augmented"]
+        self.optflow_dir = [args.video_file.split('.')[0] + "_optflowProcess",
+            args.video_file.split('.')[0] + "_optflowProcess_augmented",
+            args.video_file.split('.')[0] + "_Process"]
 
         #train the model
         if args.mode == "train":
@@ -120,39 +123,59 @@ class SpeedNet:
                 shutil.rmtree(self.optflow_dir[0])
             if(os.path.isdir(self.optflow_dir[1])):
                 shutil.rmtree(self.optflow_dir[1])
-
+            if(os.path.isdir(self.optflow_dir[2])):
+                shutil.rmtree(self.optflow_dir[2])
 
         #process video data if it doesn't exist
-        processed_video = None
-        processed_video_augment= None
+        processed_video_opflow = None
+        processed_video_opflow_augment= None
         if not os.path.isdir(self.optflow_dir[0]):
             print ("preprocessing data...")
             os.mkdir(self.optflow_dir[0])
+            os.mkdir(self.optflow_dir[2])
             if augment:
                 os.mkdir(self.optflow_dir[1])
             #Decode video frames
             vid = cv2.VideoCapture(video_file)
             frame_cnt = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
-            processed_video = np.empty((frame_cnt-1,self.DSIZE[0],self.DSIZE[1],3),dtype='uint8')
-            processed_video_augment=np.empty((frame_cnt-1,self.DSIZE[0],self.DSIZE[1],3),dtype='uint8')
+
+            # Add from second frame onwards
+            processed_video = np.empty((frame_cnt-1,self.DSIZE[0],self.DSIZE[1],3),dtype='uint8') # normal frames
+            processed_video_opflow = np.empty((frame_cnt-1,self.DSIZE[0],self.DSIZE[1],3),dtype='uint8') # normal opflow frames
+            processed_video_opflow_augment=np.empty((frame_cnt-1,self.DSIZE[0],self.DSIZE[1],3),dtype='uint8') #augmented opflow frames
+
             ret, prev = vid.read()
             i = 0
+            #insert
             while True:
                 ret, nxt  = vid.read()
                 if not ret: #EOF
                     break
                 #crop and resize frame
+                #___________________
+                nxt_resize=nxt[200:400]
+                nxt_resize=cv2.resize(nxt_resize, (0,0), fx = 0.4, fy=0.5)
+                nxt_resize=cv2.resize(nxt_resize, self.DSIZE, interpolation = cv2.INTER_AREA)
+                nxt_resize=nxt_resize/127.5 - 1.0
+                processed_video[i]=nxt_resize
+                cv2.imwrite(self.optflow_dir[2] + '/' + str(i) + ".png", nxt_resize)
+                #___________________
+
+                #___________________
                 flow = self.optflow(prev,nxt)
                 flow = cv2.resize(flow, self.DSIZE, interpolation = cv2.INTER_AREA)
-                processed_video[i] = flow/127.5 - 1.0
+                processed_video_opflow[i] = flow/127.5 - 1.0
                 cv2.imwrite(self.optflow_dir[0] + '/' + str(i) + ".png", flow)
+                #__________________
 
+                #__________________
                 if augment:
                     prev_augment,nxt_augment=self.augment_brightness(prev,nxt)
                     flow_augment=self.optflow(prev_augment,nxt_augment)
                     flow = cv2.resize(flow_augment, self.DSIZE, interpolation = cv2.INTER_AREA)
-                    processed_video_augment[i] = flow/127.5 - 1.0
+                    processed_video_opflow_augment[i] = flow/127.5 - 1.0
                     cv2.imwrite(self.optflow_dir[1] + '/' + str(i) + ".png", flow)
+                #_________________
 
                 prev = nxt
                 sys.stdout.write("\rProcessed " + str(i) + " frames" )
@@ -163,77 +186,101 @@ class SpeedNet:
             print ("Found preprocessed data")
             frame_cnt = len(os.listdir(self.optflow_dir[0]))
             processed_video = np.empty((frame_cnt,self.DSIZE[0],self.DSIZE[1],3),dtype='float32')
-            processed_video_augment=np.empty((frame_cnt,self.DSIZE[0],self.DSIZE[1],3),dtype='float32')
+            processed_video_opflow = np.empty((frame_cnt,self.DSIZE[0],self.DSIZE[1],3),dtype='float32')
+            processed_video_opflow_augment=np.empty((frame_cnt,self.DSIZE[0],self.DSIZE[1],3),dtype='float32')
             for i in range(0,frame_cnt):
+                frame=cv2.imread(self.optflow_dir[2] + '/' + str(i) + ".png")
+                processed_video[i]=frame/127.5 - 1.0
+
                 flow = cv2.imread(self.optflow_dir[0] + '/' + str(i) + ".png")
-                processed_video[i] = flow/127.5 - 1.0
+                processed_video_opflow[i] = flow/127.5 - 1.0
 
                 if augment:
                     flow = cv2.imread(self.optflow_dir[1] + '/' + str(i) + ".png")
-                    processed_video_augment[i] = flow/127.5 - 1.0
+                    processed_video_opflow_augment[i] = flow/127.5 - 1.0
 
                 sys.stdout.write("\rLoading frame " + str(i))
             print ("\ndone loading " + str(frame_cnt) + " frames")
         print ("Done prepping data")
-        return (processed_video,processed_video_augment, speed_data)
+        return (processed_video_opflow,processed_video_opflow_augment,processed_video,speed_data)
 
 
     def create_model(self):
 
         print ("Compiling Model")
-        op_flow_inp=Input(shape=(self.HISTORY,self.DSIZE[0],self.DSIZE[1],2))
 
+
+        #-----------------------------------------
+        flow_inp=Input(shape=(self.HISTORY,self.DSIZE[0],self.DSIZE[1],3))
         # 1 layer -----------------------------
-        op_flow_1=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
-        op_flow_1=TimeDistributed(Activation('relu'))(op_flow_1)
-        op_flow_1=TimeDistributed(BatchNormalization())(op_flow_1)
-        op_flow_1=TimeDistributed(Dropout(0.5))(op_flow_1)
+        flow_1=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(flow_inp)
+        flow_1=TimeDistributed(Activation('relu'))(flow_1)
+        flow_1=TimeDistributed(BatchNormalization())(flow_1)
+        flow_1=TimeDistributed(Dropout(0.5))(flow_1)
 
-        op_flow_1=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_1)
-        op_flow_1=TimeDistributed(Activation('relu'))(op_flow_1)
-        op_flow_1=TimeDistributed(BatchNormalization())(op_flow_1)
-        op_flow_1=TimeDistributed(Dropout(0.5))(op_flow_1)
+        flow_1=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(flow_1)
+        flow_1=TimeDistributed(Activation('relu'))(flow_1)
+        flow_1=TimeDistributed(BatchNormalization())(flow_1)
+        flow_1=TimeDistributed(Dropout(0.5))(flow_1)
 
-        op_flow_1=TimeDistributed(Convolution2D(128, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_1)
-        op_flow_1=TimeDistributed(Activation('relu'))(op_flow_1)
-        op_flow_1=TimeDistributed(BatchNormalization())(op_flow_1)
-        op_flow_1=TimeDistributed(Dropout(0.5))(op_flow_1)
-        op_flow_1_out=TimeDistributed(Flatten())(op_flow_1)
+        flow_1_out=TimeDistributed(Flatten())(flow_1)
         #----------------------------------------
 
         # 2 layer -----------------------------
-        op_flow_2=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
-        op_flow_2=TimeDistributed(Activation('relu'))(op_flow_2)
-        op_flow_2=TimeDistributed(BatchNormalization())(op_flow_2)
-        op_flow_2=TimeDistributed(Dropout(0.5))(op_flow_2)
+        flow_2=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(flow_inp)
+        flow_2=TimeDistributed(Activation('relu'))(flow_2)
+        flow_2=TimeDistributed(BatchNormalization())(flow_2)
+        flow_2=TimeDistributed(Dropout(0.5))(flow_2)
 
-        op_flow_2=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_2)
-        op_flow_2=TimeDistributed(Activation('relu'))(op_flow_2)
-        op_flow_2=TimeDistributed(BatchNormalization())(op_flow_2)
-        op_flow_2=TimeDistributed(Dropout(0.5))(op_flow_2)
+        flow_2=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(flow_2)
+        flow_2=TimeDistributed(Activation('relu'))(flow_2)
+        flow_2=TimeDistributed(BatchNormalization())(flow_2)
+        flow_2=TimeDistributed(Dropout(0.5))(flow_2)
 
-        op_flow_2=TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=None, padding="same"))(op_flow_2)
-        op_flow_2=TimeDistributed(BatchNormalization())(op_flow_2)
-        op_flow_2=TimeDistributed(Dropout(0.5))(op_flow_2)
+        flow_2=TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=None, padding="same"))(flow_2)
+        flow_2=TimeDistributed(BatchNormalization())(flow_2)
+        flow_2=TimeDistributed(Dropout(0.5))(flow_2)
 
-        op_flow_2_max=TimeDistributed(GlobalMaxPool2D())(op_flow_2)
-        op_flow_2_avg=TimeDistributed(GlobalAvgPool2D())(op_flow_2)
+        flow_2_max=TimeDistributed(GlobalMaxPool2D())(flow_2)
+        flow_2_avg=TimeDistributed(GlobalAvgPool2D())(flow_2)
 
-        op_flow_2_max_out=TimeDistributed(Flatten())(op_flow_2_max)
-        op_flow_2_avg_out=TimeDistributed(Flatten())(op_flow_2_avg)
+        flow_2_max_out=TimeDistributed(Flatten())(flow_2_max)
+        flow_2_avg_out=TimeDistributed(Flatten())(flow_2_avg)
+        #----------------------------------------
+        conc_flow=concatenate([flow_2_max_out,flow_2_avg_out,flow_1_out])
+        conc = LSTM(128)(conc_flow)
+        conc=Activation('relu')(conc)
+        #---------------------------------------------
+
+        #----------------------------------------
+        op_flow_inp=Input(shape=(self.DSIZE[0],self.DSIZE[1],2))
+
+        op_flow=(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
+        op_flow=(Activation('relu'))(op_flow)
+        op_flow=(BatchNormalization())(op_flow)
+        op_flow=(Dropout(0.5))(op_flow)
+
+        op_flow=(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
+        op_flow=(Activation('relu'))(op_flow)
+        op_flow=(BatchNormalization())(op_flow)
+        op_flow=(Dropout(0.5))(op_flow)
+
+        op_flow=(Convolution2D(128, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
+        op_flow=(Activation('relu'))(op_flow)
+        op_flow=(BatchNormalization())(op_flow)
+        op_flow=(Dropout(0.5))(op_flow)
+        op_flow=(Dense(256))(op_flow)
+        op_flow_out=(Flatten())(op_flow)
         #----------------------------------------
 
 
-
-        conc=concatenate([op_flow_2_max_out,op_flow_2_avg_out,op_flow_1_out])
-
-        conc = LSTM(128)(conc)
+        conc=concatenate([conc,op_flow_out])
         conc=Activation('relu')(conc)
         conc=Dropout(0.5)(conc)
         conc=Dense(128)(conc)
         conc=Dropout(0.5)(conc)
         result=Dense(1)(conc)
-        model = Model(inputs=op_flow_inp, outputs=[result])
+        model = Model(inputs=[flow_inp,op_flow_inp], outputs=[result])
 
         opt = keras.optimizers.Adam(learning_rate=self.LR)
         model.compile(optimizer=opt, loss='mse')
@@ -257,7 +304,7 @@ class SpeedNet:
 
     def train(self,X_src,Y_src, wipe,n_epochs = 50, batch_size= 32,augment=False):
         #load data
-        X,X_augment,Y = self.prep_data(X_src,Y_src,wipe = wipe,augment=augment)
+        X,X_augment,X_frames,Y = self.prep_data(X_src,Y_src,wipe = wipe,augment=augment)
 
         X = X[:,:,:,[0,2]] #extract channels with data
         X_augment=X_augment[:,:,:,[0,2]]
@@ -288,20 +335,17 @@ class SpeedNet:
         checkpoint = ModelCheckpoint(self.W_FILE, monitor='loss', verbose=1,
           save_best_only=True, mode='auto', period=1)
 
-        train_generator=DataGenerator.DataGenerator(batch_size,X,
+        train_generator=DataGenerator.DataGenerator(batch_size,X_frames,X,
             X_augment,Y,FrameIndices,SpeedIndices,train_size,
             indexes=train_indexes,validation_mode=False,augment=augment)
 
-        valid_generator=DataGenerator.DataGenerator(batch_size,X,
+        valid_generator=DataGenerator.DataGenerator(batch_size,X_frames,X,
             X_augment,Y,FrameIndices,SpeedIndices,train_size,
             indexes=val_indexes,validation_mode=True,augment=False)
 
         self.model.fit_generator(train_generator,
                     validation_data=valid_generator,
                     epochs=n_epochs,
-                    # We pass some validation for
-                    # monitoring validation loss and metrics
-                    # at the end of each epoch
                     callbacks=[checkpoint])
 
         #save weights
@@ -309,14 +353,10 @@ class SpeedNet:
 
     def test(self,X_src, Y_src):
         #load data
-        X_test,X_test_augment,Y_test = self.prep_data(X_src,Y_src,augment=False,wipe=True)
+        X_test,X_test_augment,X_test_frames,Y_test = self.prep_data(X_src,Y_src,augment=False,wipe=True)
         X_test = X_test[:,:,:,[0,2]] #extract channels with data
-        FrameIndices,SpeedIndices=DataGenerator.generate_indices(self.HISTORY,len(X_test))
-        train_size=len(SpeedIndices)
-        test_indexes=np.arange(int(train_size))
-        test_generator=DataGenerator.DataGenerator(self.BATCH_SIZE,
-            X_test,X_test_augment,Y_test,FrameIndices,SpeedIndices,train_size,
-            indexes=test_indexes,validation_mode=True,augment=False)
+
+
         #load weights
         ret = self.load_weights()
         if ret:
@@ -326,15 +366,18 @@ class SpeedNet:
             FrameIndices,SpeedIndices=DataGenerator.generate_indices(self.HISTORY,len(X_test))
             train_size=len(SpeedIndices)
             print("Number of frames to be evaluated: ",train_size)
-            for sequence in FrameIndices:
+            for sequenceFrame,sequenceSpeed in zip(FrameIndices,SpeedIndices):
+                opflow=X_test[sequenceSpeed]
                 framesequence=[]
-                for index in sequence:
-                    frame=X_test[index]
+                for index in sequenceFrame:
+                    frame=X_test_frames[index]
                     framesequence.append(frame)
 
                 framesequence=np.array(framesequence)
+                opflow=np.array(opflow)
                 framesequence = framesequence[None,:,:,:,:]
-                speed_predict=self.model.predict(framesequence)
+                opflow=opflow[None,...]
+                speed_predict=self.model.predict([framesequence,opflow])
                 speed_predict=float(speed_predict[0])
                 predictions.append(speed_predict)
 
@@ -347,26 +390,30 @@ class SpeedNet:
             print ("Test failed to complete with improper weights")
 
     def predict(self,X_src, Y_out):
-        X,X_augment,Y = self.prep_data(X_src,Y_out,augment=False,wipe=True)
+        X,X_augment,X_frames,Y = self.prep_data(X_src,Y_out,augment=False,wipe=True)
         X=X[:,:,:,[0,2]]
+
         ret=self.load_weights()
         if ret:
             predictions=[]
             FrameIndices,SpeedIndices=DataGenerator.generate_indices(self.HISTORY,len(X))
             train_size=len(SpeedIndices)
             print("Number of frames to be predicted: ",train_size)
-            for sequence in FrameIndices:
+            for sequenceFrame,sequenceSpeed in zip(FrameIndices,SpeedIndices):
+                opflow=X[sequenceSpeed]
                 framesequence=[]
-                for index in sequence:
-                    frame=X[index]
+                for index in sequenceFrame:
+                    frame=X_frames[index]
                     framesequence.append(frame)
 
                 framesequence=np.array(framesequence)
+                opflow=np.array(opflow)
+                opflow=opflow[None,...]
                 framesequence = framesequence[None,:,:,:,:]
-                speed_predict=self.model.predict(framesequence)
+                speed_predict=self.model.predict([framesequence,opflow])
                 speed_predict=float(speed_predict[0])
                 prediction_str=str(speed_predict)
-                frame_num=str( SpeedIndices[sequence[0]]+1)
+                frame_num=str( SpeedIndices[sequenceFrame[0]]+1)
                 sys.stdout.write("\rFor Frame: " +frame_num+ " Predicted speed: "+ prediction_str )
                 predictions.append(speed_predict)
 

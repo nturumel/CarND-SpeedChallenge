@@ -27,10 +27,11 @@ def generate_indices(time_history,train_size):
     return FrameIndices,SpeedIndices
 
 class DataGenerator(keras.utils.Sequence):
-    def __init__(self, batch_size, frame,frame_augmented,speed_list,FrameIndices,SpeedIndices,train_size,indexes = None, validation_mode = False,augment=False):
+    def __init__(self, batch_size, frame,frame_opflow,frame_opflow_augmented,speed_list,FrameIndices,SpeedIndices,train_size,indexes = None, validation_mode = False,augment=False):
 
-        self.frame_augmented = frame_augmented
-        self.frame = frame
+        self.frame=frame
+        self.frame_opflow_augmented = frame_opflow_augmented
+        self.frame_opflow = frame_opflow
         self.speed_list=speed_list
         self.FrameIndices=FrameIndices
         self.SpeedIndices=SpeedIndices
@@ -72,16 +73,21 @@ class DataGenerator(keras.utils.Sequence):
         indexes.sort()## We are making the Generator Class to read the video and the speed file
         speeds=[]
         op_flow=[]
+        frame=[]
         for index in indexes:
             speeds.append(self.speed_list[self.SpeedIndices[index]])
-            frames=[]
-            for frameIndex in self.FrameIndices[index]:
-                r=(np.random.random_integers(1,100))
-                if r%2==0 and self.augment:
-                  frames.append(self.frame_augmented[frameIndex])
-                else:
-                  frames.append(self.frame[frameIndex])
-            op_flow.append(frames)
+            r=(np.random.random_integers(1,100))
+            if r%2==0 and self.augment:
+                op_flow.append(self.frame_opflow_augmented[self.SpeedIndices[index]])
+            else:
+                op_flow.append(self.frame_opflow[self.SpeedIndices[index]])
+
+            temp=[]
+            for frame_Index in self.FrameIndices[index]:
+                temp.append(self.frame[frame_Index])
+            frame.append(temp)
+
+        frame=np.array(frame)
         op_flow=np.array(op_flow)
         speeds=np.array(speeds)
-        return [op_flow,speeds]
+        return [[frame,op_flow],speeds]
