@@ -212,26 +212,8 @@ class SpeedNet:
 
         #-----------------------------------------
         flow_inp=Input(shape=(self.HISTORY,self.DSIZE[0],self.DSIZE[1],3))
-        # 1 layer -----------------------------
-        flow_1=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(flow_inp)
-        flow_1=TimeDistributed(Activation('relu'))(flow_1)
-        flow_1=TimeDistributed(BatchNormalization())(flow_1)
-        flow_1=TimeDistributed(Dropout(0.5))(flow_1)
 
-        flow_1=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(flow_1)
-        flow_1=TimeDistributed(Activation('relu'))(flow_1)
-        flow_1=TimeDistributed(BatchNormalization())(flow_1)
-        flow_1=TimeDistributed(Dropout(0.5))(flow_1)
-
-        flow_1=TimeDistributed(Convolution2D(128, 8,8 ,border_mode='same', subsample=(4,4)))(flow_1)
-        flow_1=TimeDistributed(Activation('relu'))(flow_1)
-        flow_1=TimeDistributed(BatchNormalization())(flow_1)
-        flow_1=TimeDistributed(Dropout(0.5))(flow_1)
-
-        flow_1_out=TimeDistributed(Flatten())(flow_1)
-        #----------------------------------------
-
-        # 2 layer -----------------------------
+        # flow layer -----------------------------
         flow_2=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(flow_inp)
         flow_2=TimeDistributed(Activation('relu'))(flow_2)
         flow_2=TimeDistributed(BatchNormalization())(flow_2)
@@ -252,7 +234,7 @@ class SpeedNet:
         flow_2_max_out=TimeDistributed(Flatten())(flow_2_max)
         flow_2_avg_out=TimeDistributed(Flatten())(flow_2_avg)
         #----------------------------------------
-        conc_flow=concatenate([flow_2_max_out,flow_2_avg_out,flow_1_out])
+        conc_flow=concatenate([flow_2_max_out,flow_2_avg_out])
         conc = LSTM(128)(conc_flow)
         conc=Activation('relu')(conc)
         #---------------------------------------------
@@ -266,6 +248,11 @@ class SpeedNet:
         op_flow=(Dropout(0.5))(op_flow)
 
         op_flow=(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
+        op_flow=(Activation('relu'))(op_flow)
+        op_flow=(BatchNormalization())(op_flow)
+        op_flow=(Dropout(0.5))(op_flow)
+
+        op_flow=(Convolution2D(128, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
         op_flow=(Activation('relu'))(op_flow)
         op_flow=(BatchNormalization())(op_flow)
         op_flow=(Dropout(0.5))(op_flow)
