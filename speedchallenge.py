@@ -214,29 +214,21 @@ class SpeedNet:
         flow_inp=Input(shape=(self.HISTORY,self.DSIZE[0],self.DSIZE[1],3))
 
         # flow layer -----------------------------
-        flow_2=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(flow_inp)
-        flow_2=TimeDistributed(Activation('relu'))(flow_2)
-        flow_2=TimeDistributed(BatchNormalization())(flow_2)
-        flow_2=TimeDistributed(Dropout(0.5))(flow_2)
+        flow=(ConvLSTM2D(32, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=True,activation="relu", dropout=0.5))(flow_inp)
+        flow=(BatchNormalization())(flow)
 
-        flow_2=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(flow_2)
-        flow_2=TimeDistributed(Activation('relu'))(flow_2)
-        flow_2=TimeDistributed(BatchNormalization())(flow_2)
-        flow_2=TimeDistributed(Dropout(0.5))(flow_2)
 
-        flow_2=TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=None, padding="same"))(flow_2)
-        flow_2=TimeDistributed(BatchNormalization())(flow_2)
-        flow_2=TimeDistributed(Dropout(0.5))(flow_2)
+        flow=(ConvLSTM2D(64, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=True,activation="relu", dropout=0.5))(flow_inp)
+        flow=(BatchNormalization())(flow)
 
-        flow_2_max=TimeDistributed(GlobalMaxPool2D())(flow_2)
-        flow_2_avg=TimeDistributed(GlobalAvgPool2D())(flow_2)
 
-        flow_2_max_out=TimeDistributed(Flatten())(flow_2_max)
-        flow_2_avg_out=TimeDistributed(Flatten())(flow_2_avg)
+        flow=(ConvLSTM2D(128, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=True,activation="relu", dropout=0.5))(flow_inp)
+        flow=(BatchNormalization())(flow)
+
+        flow=Flatten()(flow)
+        flow_out=Dense(256)
         #----------------------------------------
-        conc_flow=concatenate([flow_2_max_out,flow_2_avg_out])
-        conc = LSTM(128)(conc_flow)
-        conc=Activation('relu')(conc)
+        conc=Activation('relu')(flow_out)
         #---------------------------------------------
 
         #----------------------------------------
