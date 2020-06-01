@@ -5,7 +5,7 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D
 from keras.optimizers import Adam
 from tensorflow.keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
-from keras.layers import Input, TimeDistributed, LSTM,GlobalMaxPool2D,BatchNormalization,GlobalAvgPool2D,concatenate
+from keras.layers import Input, TimeDistributed, ConvLSTM2D,LSTM,GlobalMaxPool2D,BatchNormalization,GlobalAvgPool2D,concatenate
 from keras import Model
 from tensorflow import keras
 
@@ -218,15 +218,15 @@ class SpeedNet:
         flow=(BatchNormalization())(flow)
 
 
-        flow=(ConvLSTM2D(64, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=True,activation="relu", dropout=0.5))(flow_inp)
+        flow=(ConvLSTM2D(64, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=True,activation="relu", dropout=0.5))(flow)
         flow=(BatchNormalization())(flow)
 
 
-        flow=(ConvLSTM2D(128, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=True,activation="relu", dropout=0.5))(flow_inp)
+        flow=(ConvLSTM2D(128, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=False,activation="relu", dropout=0.5))(flow)
         flow=(BatchNormalization())(flow)
 
         flow=Flatten()(flow)
-        flow_out=Dense(256)
+        flow_out=Dense(256)(flow)
         #----------------------------------------
         conc=Activation('relu')(flow_out)
         #---------------------------------------------
