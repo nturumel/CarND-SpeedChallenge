@@ -255,11 +255,23 @@ class SpeedNet:
 
 
         conc=concatenate([conc,op_flow_out])
+
         conc=Activation('relu')(conc)
         conc=Dropout(0.5)(conc)
-        conc=Dense(128)(conc)
+        conc=BatchNormalization()(conc)
+
+        conc=Dense(256)(conc)
+        conc=Activation('relu')(conc)
         conc=Dropout(0.5)(conc)
+        conc=BatchNormalization()(conc)
+
+        conc=Dense(128)(conc)
+        conc=Activation('relu')(conc)
+        conc=Dropout(0.5)(conc)
+        conc=BatchNormalization()(conc)
+
         result=Dense(1)(conc)
+
         model = Model(inputs=[flow_inp,op_flow_inp], outputs=[result])
 
         opt = keras.optimizers.Adam(learning_rate=self.LR)
