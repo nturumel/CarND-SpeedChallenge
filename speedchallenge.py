@@ -260,11 +260,6 @@ class SpeedNet:
         conc=Dropout(0.5)(conc)
         conc=BatchNormalization()(conc)
 
-        conc=Dense(256)(conc)
-        conc=Activation('relu')(conc)
-        conc=Dropout(0.5)(conc)
-        conc=BatchNormalization()(conc)
-
         conc=Dense(128)(conc)
         conc=Activation('relu')(conc)
         conc=Dropout(0.5)(conc)
