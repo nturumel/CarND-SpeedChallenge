@@ -218,10 +218,6 @@ class SpeedNet:
         flow=(BatchNormalization())(flow)
 
 
-        flow=(ConvLSTM2D(64, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=True,activation="relu", dropout=0.5))(flow)
-        flow=(BatchNormalization())(flow)
-
-
         flow=(ConvLSTM2D(128, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=False,activation="relu", dropout=0.5))(flow)
         flow=(BatchNormalization())(flow)
 
@@ -235,11 +231,6 @@ class SpeedNet:
         op_flow_inp=Input(shape=(self.DSIZE[0],self.DSIZE[1],2))
 
         op_flow=(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
-        op_flow=(Activation('relu'))(op_flow)
-        op_flow=(BatchNormalization())(op_flow)
-        op_flow=(Dropout(0.5))(op_flow)
-
-        op_flow=(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
         op_flow=(Activation('relu'))(op_flow)
         op_flow=(BatchNormalization())(op_flow)
         op_flow=(Dropout(0.5))(op_flow)
@@ -262,7 +253,7 @@ class SpeedNet:
         conc=Dense(128)(conc)
         conc=Activation('relu')(conc)
         conc=Dropout(0.5)(conc)
-        
+
         result=Dense(1)(conc)
 
         model = Model(inputs=[flow_inp,op_flow_inp], outputs=[result])
