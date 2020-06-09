@@ -239,7 +239,8 @@ class SpeedNet:
         op_flow=(Activation('relu'))(op_flow)
         op_flow=(BatchNormalization())(op_flow)
         op_flow=(Dropout(0.5))(op_flow)
-
+        op_flow=GlobalMaxPool2D()(op_flow)
+        
         op_flow=(Dense(256))(op_flow)
         op_flow_out=(Flatten())(op_flow)
         #----------------------------------------
