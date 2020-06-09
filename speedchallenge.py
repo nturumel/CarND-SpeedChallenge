@@ -220,6 +220,8 @@ class SpeedNet:
 
         flow=(ConvLSTM2D(128, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=False,activation="relu", dropout=0.5))(flow)
         flow=(BatchNormalization())(flow)
+        flow=MaxPooling2D(pool_size=(2, 2),strides=(1, 1), padding='valid')(flow)
+
 
         flow=Flatten()(flow)
         flow_out=Dense(256)(flow)
