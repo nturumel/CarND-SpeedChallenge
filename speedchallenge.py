@@ -31,7 +31,7 @@ class SpeedNet:
     DSIZE = (100,100)
     W_FILE = "weights.h5"
     EPOCHS = 100
-    BATCH_SIZE = 32
+    BATCH_SIZE = 100
     split_start=0
     split_end=0
     HISTORY=2
@@ -312,7 +312,7 @@ class SpeedNet:
 
 
         print ("Starting training")
-        checkpoint = ModelCheckpoint(self.W_FILE, monitor='loss', verbose=1,
+        checkpoint = ModelCheckpoint(self.W_FILE, monitor='val_loss', verbose=1,
           save_best_only=True, mode='auto', period=1)
 
         train_generator=DataGenerator.DataGenerator(batch_size,X_frames,X,
