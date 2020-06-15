@@ -31,7 +31,7 @@ class SpeedNet:
     DSIZE = (100,100)
     W_FILE = "weights.h5"
     EPOCHS = 100
-    BATCH_SIZE = 100
+    BATCH_SIZE = 500
     split_start=0
     split_end=0
     HISTORY=2
@@ -220,8 +220,7 @@ class SpeedNet:
 
         flow=(ConvLSTM2D(128, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=False,activation="relu", dropout=0.5))(flow)
         flow=(BatchNormalization())(flow)
-        flow=MaxPooling2D(pool_size=(2, 2),strides=(1, 1), padding='valid')(flow)
-
+        
 
         flow=Flatten()(flow)
         flow_out=Dense(256)(flow)
@@ -368,7 +367,7 @@ class SpeedNet:
             nElems=len(Y)
             mean_square=0
             for i in range(nElems):
-                mean_square+=(prediction[i]-Y[i])*(prediction[i]-Y[i])
+                mean_square+=((predictions[i]-Y[i])*(predictions[i]-Y[i]))
 
             mean_square=mean_square/nElems
 
