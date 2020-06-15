@@ -361,9 +361,17 @@ class SpeedNet:
                 speed_predict=float(speed_predict[0])
                 predictions.append(speed_predict)
 
+            Y=[]
             #adjust for time history:
-            Y_test=Y_test[self.HISTORY-1:]
-            mean_square=mean_squared_error(predictions,Y_test)
+            for speed in SpeedIndices:
+                Y.append(Y_test[speed])
+            nElems=len(Y)
+            mean_square=0
+            for i in range(nElems):
+                mean_square+=(prediction[i]-Y[i])*(prediction[i]-Y[i])
+
+            mean_square=mean_square/nElems
+
             print("The mean square error is: ",mean_square)
             print ("Done testing")
         else:
