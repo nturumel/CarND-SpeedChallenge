@@ -51,7 +51,11 @@ Based on my research there seem to be two main approaches to solving the problem
 
    
 
-Based on my analysis of the three methods I found that a time series analysis of pure op flow images produced the best results.
+Based on my analysis of the three methods I found that a combined approach produced the best results.
+
+The work flow is demonstrated below:
+
+<img src="C:\Users\Nihar\Documents\speedchallenge\pics\workFlow.png" style="zoom:100%;" />
 
 ## Data Augmentation:
 

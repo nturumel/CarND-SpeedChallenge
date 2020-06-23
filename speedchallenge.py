@@ -31,7 +31,7 @@ class SpeedNet:
     DSIZE = (100,100)
     W_FILE = "weights.h5"
     EPOCHS = 100
-    BATCH_SIZE = 500
+    BATCH_SIZE = 1000
     split_start=0
     split_end=0
     HISTORY=2
@@ -75,7 +75,7 @@ class SpeedNet:
 
     def process_frame(self,frame):
         frame = cv2.resize(frame, self.DSIZE, interpolation = cv2.INTER_AREA)
-        frame = frame/255
+        frame = frame/127.50 - 1.0
         return frame
 
     def augment_brightness(self,prev,nxt):
@@ -162,7 +162,7 @@ class SpeedNet:
                 print('Before normalising: min and max ',np.amin(nxt_resize))
                 print(np.amax(nxt_resize))
                 '''
-                processed_video[i]=nxt_resize/255
+                processed_video[i]=nxt_resize/127.50 - 1.0
 
                 """
                 print('After normalising: ',np.mean(processed_video[i]))
@@ -181,7 +181,7 @@ class SpeedNet:
                 print('Before normalising: min and max ',np.amin(flow))
                 print(np.amax(flow))
                 '''
-                processed_video_opflow[i] = flow/255
+                processed_video_opflow[i] = flow/127.50 - 1.0
                 """
                 print('After normalising: ',np.mean(processed_video_opflow[i]))
                 print('After normalising: min and max ',np.amin(processed_video_opflow[i]))
@@ -196,7 +196,7 @@ class SpeedNet:
                     prev_augment,nxt_augment=self.augment_brightness(prev,nxt)
                     flow_augment=self.optflow(prev_augment,nxt_augment)
                     flow = cv2.resize(flow_augment, self.DSIZE, interpolation = cv2.INTER_AREA)
-                    processed_video_opflow_augment[i] = flow/255
+                    processed_video_opflow_augment[i] = flow/127.50 - 1.0
                     cv2.imwrite(self.optflow_dir[1] + '/' + str(i) + ".png", flow)
                 #_________________
 
@@ -213,14 +213,14 @@ class SpeedNet:
             processed_video_opflow_augment=np.empty((frame_cnt,self.DSIZE[0],self.DSIZE[1],3),dtype='float32')
             for i in range(0,frame_cnt):
                 frame=cv2.imread(self.optflow_dir[2] + '/' + str(i) + ".png")
-                processed_video[i]=frame/255
+                processed_video[i]=frame/127.50 - 1.0
 
                 flow = cv2.imread(self.optflow_dir[0] + '/' + str(i) + ".png")
-                processed_video_opflow[i] = flow/255
+                processed_video_opflow[i] = flow/127.50 - 1.0
 
                 if augment:
                     flow = cv2.imread(self.optflow_dir[1] + '/' + str(i) + ".png")
-                    processed_video_opflow_augment[i] = flow/255
+                    processed_video_opflow_augment[i] = flow/127.50 - 1.0
 
                 sys.stdout.write("\rLoading frame " + str(i))
             print ("\ndone loading " + str(frame_cnt) + " frames")
