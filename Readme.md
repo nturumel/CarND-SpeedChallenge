@@ -127,14 +127,13 @@ These provide a way to deal with sudden changes in brightness. However the perfo
            return [[frame,op_flow],speeds]
    ```
    
-
-   <img src=".\pics\optflow.png" alt="optflow" style="zoom:250%;" />*OPTFLOW IMAGE*
-
+<img src=".\pics\optflow.png" alt="optflow" style="zoom:500%;" />*OPTFLOW IMAGE*
    
 
-   <img src=".\pics\flow.png" alt="flow" style="zoom:250%;" />*FLOW IMAGE*
-
-   ​														
+   
+<img src=".\pics\flow.png" alt="flow" style="zoom:500%;" />*FLOW IMAGE*
+   
+​														
 
 ## Final Model Architecture:
 

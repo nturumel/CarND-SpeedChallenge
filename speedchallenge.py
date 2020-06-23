@@ -188,7 +188,7 @@ class SpeedNet:
                 print(np.amax(processed_video_opflow[i]))
                 print("end flow")
                 """
-                cv2.imwrite(self.optflow_dir[0] + '/' + str(i) + ".png", processed_video_opflow[i])
+                cv2.imwrite(self.optflow_dir[0] + '/' + str(i) + ".png", flow)
                 #__________________
 
                 #__________________
