@@ -75,7 +75,7 @@ class SpeedNet:
 
     def process_frame(self,frame):
         frame = cv2.resize(frame, self.DSIZE, interpolation = cv2.INTER_AREA)
-        frame = frame/127.5 - 1.0
+        frame = frame/255
         return frame
 
     def augment_brightness(self,prev,nxt):
@@ -156,16 +156,39 @@ class SpeedNet:
                 nxt_resize=nxt[200:400]
                 nxt_resize=cv2.resize(nxt_resize, (0,0), fx = 0.4, fy=0.5)
                 nxt_resize=cv2.resize(nxt_resize, self.DSIZE, interpolation = cv2.INTER_AREA)
-                nxt_resize=nxt_resize/127.5 - 1.0
-                processed_video[i]=nxt_resize
+
+                '''
+                print('Before normalising: ',np.mean(nxt_resize))
+                print('Before normalising: min and max ',np.amin(nxt_resize))
+                print(np.amax(nxt_resize))
+                '''
+                processed_video[i]=nxt_resize/255
+
+                """
+                print('After normalising: ',np.mean(processed_video[i]))
+                print('After normalising: min and max ',np.amin(processed_video[i]))
+                print(np.amax(processed_video[i]))
+                """
                 cv2.imwrite(self.optflow_dir[2] + '/' + str(i) + ".png", nxt_resize)
                 #___________________
 
                 #___________________
                 flow = self.optflow(prev,nxt)
                 flow = cv2.resize(flow, self.DSIZE, interpolation = cv2.INTER_AREA)
-                processed_video_opflow[i] = flow/127.5 - 1.0
-                cv2.imwrite(self.optflow_dir[0] + '/' + str(i) + ".png", flow)
+                '''
+                print("flow")
+                print('Before normalising: ',np.mean(flow))
+                print('Before normalising: min and max ',np.amin(flow))
+                print(np.amax(flow))
+                '''
+                processed_video_opflow[i] = flow/255
+                """
+                print('After normalising: ',np.mean(processed_video_opflow[i]))
+                print('After normalising: min and max ',np.amin(processed_video_opflow[i]))
+                print(np.amax(processed_video_opflow[i]))
+                print("end flow")
+                """
+                cv2.imwrite(self.optflow_dir[0] + '/' + str(i) + ".png", processed_video_opflow[i])
                 #__________________
 
                 #__________________
@@ -173,7 +196,7 @@ class SpeedNet:
                     prev_augment,nxt_augment=self.augment_brightness(prev,nxt)
                     flow_augment=self.optflow(prev_augment,nxt_augment)
                     flow = cv2.resize(flow_augment, self.DSIZE, interpolation = cv2.INTER_AREA)
-                    processed_video_opflow_augment[i] = flow/127.5 - 1.0
+                    processed_video_opflow_augment[i] = flow/255
                     cv2.imwrite(self.optflow_dir[1] + '/' + str(i) + ".png", flow)
                 #_________________
 
@@ -190,14 +213,14 @@ class SpeedNet:
             processed_video_opflow_augment=np.empty((frame_cnt,self.DSIZE[0],self.DSIZE[1],3),dtype='float32')
             for i in range(0,frame_cnt):
                 frame=cv2.imread(self.optflow_dir[2] + '/' + str(i) + ".png")
-                processed_video[i]=frame/127.5 - 1.0
+                processed_video[i]=frame/255
 
                 flow = cv2.imread(self.optflow_dir[0] + '/' + str(i) + ".png")
-                processed_video_opflow[i] = flow/127.5 - 1.0
+                processed_video_opflow[i] = flow/255
 
                 if augment:
                     flow = cv2.imread(self.optflow_dir[1] + '/' + str(i) + ".png")
-                    processed_video_opflow_augment[i] = flow/127.5 - 1.0
+                    processed_video_opflow_augment[i] = flow/255
 
                 sys.stdout.write("\rLoading frame " + str(i))
             print ("\ndone loading " + str(frame_cnt) + " frames")
