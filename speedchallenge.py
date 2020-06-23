@@ -214,7 +214,7 @@ class SpeedNet:
         flow_inp=Input(shape=(self.HISTORY,self.DSIZE[0],self.DSIZE[1],3))
 
         # flow layer -----------------------------
-        flow=(ConvLSTM2D(16, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=True,activation="relu", dropout=0.5))(flow_inp)
+        flow=(ConvLSTM2D(32, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=True,activation="relu", dropout=0.5))(flow_inp)
         flow=(BatchNormalization())(flow)
 
 
@@ -231,7 +231,7 @@ class SpeedNet:
         #----------------------------------------
         op_flow_inp=Input(shape=(self.DSIZE[0],self.DSIZE[1],2))
 
-        op_flow=(Convolution2D(16, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
+        op_flow=(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
         op_flow=(Activation('relu'))(op_flow)
         op_flow=(BatchNormalization())(op_flow)
         op_flow=(Dropout(0.5))(op_flow)

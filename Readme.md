@@ -78,83 +78,130 @@ I used to types of augmentation:
    
    ```
    
+
 These provide a way to deal with sudden changes in brightness. However the performance of a model trained with augmentation was problematic, so it was dropped.
-   
+
 2. #### Flipping the video:
 
    The second augmentation was achieved by flipping the entire video from left to right. It stood to reason that a flipped video would and should have the exact same speed values for each frame and a good model should be able to detect that. This double  the amount of data we have.
 
    About half of the flipped video was split and used purely for validation, enabling us to validate  on a decently sized piece of unseen data.
+   
+   
+   
+3. #### **Data Generator**:
+
+   The data generator has an augment flag which when turned on, randomly inserts augmented images in the training pipeline and randomly flips images.
+
+   
+
+   ```python
+         def __data_generation(self,indexes):
+           # Generates data containing batch samples
+           indexes=list(indexes)
+           indexes.sort()## We are making the Generator Class to read the video and the speed file
+           speeds=[]
+           op_flow=[]
+           frame=[]
+           for index in indexes:
+               speeds.append(self.speed_list[self.SpeedIndices[index]])
+               r=(np.random.random_integers(1,100))
+               if r%2==0 and self.augment:
+                   op_flow.append(self.frame_opflow_augmented[self.SpeedIndices[index]])
+               else:
+                   op_flow.append(self.frame_opflow[self.SpeedIndices[index]])
+   
+               # second augmentation flip
+               r=(np.random.random_integers(1,100))
+               if r%5==0 and self.augment:
+                   cv.flip( op_flow[-1],1)
+   
+               temp=[]
+               for frame_Index in self.FrameIndices[index]:
+                   temp.append(self.frame[frame_Index])
+               frame.append(temp)
+   
+           frame=np.array(frame)
+           op_flow=np.array(op_flow)
+           speeds=np.array(speeds)
+           return [[frame,op_flow],speeds]
+   ```
+   
+
+   
 
 ## Final Model Architecture:
 
-One of the biggest challenges of the project was the limited availability of data for training.  There
-
-was also a huge problem of overfitting that I wanted to avoid. Hence, I added dropouts, batch normalizations and also widened the layers.
+One of the biggest challenges of the project was the limited availability of data for training.  There was also a huge problem of overfitting that I wanted to avoid. Hence, I added dropouts, batch normalizations and also widened the layers. I also added pooling layers.
 
 
 
 ```python
-# 1 layer -----------------------------
-op_flow_1=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
-    op_flow_1=TimeDistributed(Activation('relu'))(op_flow_1)
-    op_flow_1=TimeDistributed(BatchNormalization())(op_flow_1)
-    op_flow_1=TimeDistributed(Dropout(0.5))(op_flow_1)
+#-----------------------------------------
+        flow_inp=Input(shape=(self.HISTORY,self.DSIZE[0],self.DSIZE[1],3))
 
-    op_flow_1=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_1)
-    op_flow_1=TimeDistributed(Activation('relu'))(op_flow_1)
-    op_flow_1=TimeDistributed(BatchNormalization())(op_flow_1)
-    op_flow_1=TimeDistributed(Dropout(0.5))(op_flow_1)
+        # flow layer -----------------------------
+        flow=(ConvLSTM2D(32, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=True,activation="relu", dropout=0.5))(flow_inp)
+        flow=(BatchNormalization())(flow)
 
-    op_flow_1=TimeDistributed(Convolution2D(128, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_1)
-    op_flow_1=TimeDistributed(Activation('relu'))(op_flow_1)
-    op_flow_1=TimeDistributed(BatchNormalization())(op_flow_1)
-    op_flow_1=TimeDistributed(Dropout(0.5))(op_flow_1)
-    op_flow_1_out=TimeDistributed(Flatten())(op_flow_1)
-    #----------------------------------------
 
-    # 2 layer -----------------------------
-    op_flow_2=TimeDistributed(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
-    op_flow_2=TimeDistributed(Activation('relu'))(op_flow_2)
-    op_flow_2=TimeDistributed(BatchNormalization())(op_flow_2)
-    op_flow_2=TimeDistributed(Dropout(0.5))(op_flow_2)
+        flow=(ConvLSTM2D(64, 8,8 ,border_mode='same', subsample=(4,4),return_sequences=False,activation="relu", dropout=0.5))(flow)
+        flow=(BatchNormalization())(flow)
 
-    op_flow_2=TimeDistributed(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_2)
-    op_flow_2=TimeDistributed(Activation('relu'))(op_flow_2)
-    op_flow_2=TimeDistributed(BatchNormalization())(op_flow_2)
-    op_flow_2=TimeDistributed(Dropout(0.5))(op_flow_2)
 
-    op_flow_2=TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=None, padding="same"))(op_flow_2)
-    op_flow_2=TimeDistributed(BatchNormalization())(op_flow_2)
-    op_flow_2=TimeDistributed(Dropout(0.5))(op_flow_2)
+        flow=Flatten()(flow)
+        flow_out=Dense(256)(flow)
+        #----------------------------------------
+        conc=Activation('relu')(flow_out)
+        #---------------------------------------------
 
-    op_flow_2_max=TimeDistributed(GlobalMaxPool2D())(op_flow_2)
-    op_flow_2_avg=TimeDistributed(GlobalAvgPool2D())(op_flow_2)
+        #----------------------------------------
+        op_flow_inp=Input(shape=(self.DSIZE[0],self.DSIZE[1],2))
 
-    op_flow_2_max_out=TimeDistributed(Flatten())(op_flow_2_max)
-    op_flow_2_avg_out=TimeDistributed(Flatten())(op_flow_2_avg)
-    #----------------------------------------
-    conc=concatenate([op_flow_2_max_out,op_flow_2_avg_out,op_flow_1_out])
+        op_flow=(Convolution2D(32, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow_inp)
+        op_flow=(Activation('relu'))(op_flow)
+        op_flow=(BatchNormalization())(op_flow)
+        op_flow=(Dropout(0.5))(op_flow)
 
-    conc = LSTM(128)(conc)
-    conc=Activation('relu')(conc)
-    conc=Dropout(0.5)(conc)
-    conc=Dense(128)(conc)
-    conc=Dropout(0.5)(conc)
-    result=Dense(1)(conc)
-    model = Model(inputs=op_flow_inp, outputs=[result])
+        op_flow=(Convolution2D(64, 8,8 ,border_mode='same', subsample=(4,4)))(op_flow)
+        op_flow=(Activation('relu'))(op_flow)
+        op_flow=(BatchNormalization())(op_flow)
+        op_flow=(Dropout(0.5))(op_flow)
 
-    opt = keras.optimizers.Adam(learning_rate=self.LR)
-    model.compile(optimizer=opt, loss='mse')   
+        op_flow=MaxPooling2D(pool_size=(2, 2),strides=(1, 1), padding='valid')(op_flow)
+
+        op_flow=(Dense(256))(op_flow)
+        op_flow_out=(Flatten())(op_flow)
+        #----------------------------------------
+
+
+        conc=concatenate([conc,op_flow_out])
+
+        conc=Activation('relu')(conc)
+        conc=Dropout(0.5)(conc)
+
+        conc=Dense(128)(conc)
+        conc=Activation('relu')(conc)
+        conc=Dropout(0.5)(conc)
+
+        result=Dense(1)(conc)
+
+        model = Model(inputs=[flow_inp,op_flow_inp], outputs=[result])
+
+        opt = keras.optimizers.Adam(learning_rate=self.LR)
+        model.compile(optimizer=opt, loss='mse')
 ```
 
   
 
-This particular model works well with a LR of 0.00001.
+This particular model works well with a LR of 0.0001.
 
 ## Training:
 
-The model was having trouble adjusting to the presence of augmented data while training, in order to combat that, the model was first trained without augmentation for 300 epochs, and then further trained with augmentation for 300 epochs.
+After a lot of trial and error, we concluded that the models needed augmentation to avoid overfitting. We trained with augmentation without flip and with flip for 1000 epochs, callbacks ensured that we were not saving the point of overfitting.
+
+`checkpoint = ModelCheckpoint(self.W_FILE, monitor='val_loss', verbose=1,
+          save_best_only=True, mode='auto', period=1)`
 
 Finally the model was trained further by the clipped flipped video reserved for training. 
 
@@ -162,7 +209,7 @@ Finally the model was trained further by the clipped flipped video reserved for 
 
 ## Model Results and Performance:
 
-In the end the resulting model has a training accuracy of  and a validation accuracy of .
+In the end the resulting model has a training accuracy of  and a validation accuracy of  .
 
 It performed with an accuracy of -- with the unseen flipped video.
 
