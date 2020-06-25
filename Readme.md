@@ -57,6 +57,42 @@ The work flow is demonstrated below:
 
 <img src="C:\Users\Nihar\Documents\speedchallenge\pics\workFlow.png" style="zoom:100%;" />
 
+## Data:
+
+The frames were read in at a size of (640 x 480) and cropped between pixels 200:400 on the y axis, they were further bought doen to a size of (100 x 100) and then normalized between -1:1.
+
+ Opflow Data:
+
+```python
+def optflow(self,frame1,frame2):
+        frame1 = frame1[200:400]
+        frame1 = cv2.resize(frame1, (0,0), fx = 0.4, fy=0.5)
+        frame2 = frame2[200:400]
+        frame2 = cv2.resize(frame2, (0,0), fx = 0.4, fy=0.5)
+        flow = np.zeros_like(frame1)
+        prev = cv2.cvtColor(frame1,cv2.COLOR_BGR2GRAY)
+        nxt = cv2.cvtColor(frame2,cv2.COLOR_BGR2GRAY)
+        flow_data = cv2.calcOpticalFlowFarneback(prev, nxt,None, 0.4, 1, 12, 2, 8, 1.2, 0)
+        #convert data to hsv
+        mag, ang = cv2.cartToPolar(flow_data[...,0], flow_data[...,1])
+        flow[...,1] = 255
+        flow[...,0] = ang*180/np.pi/2
+        flow[...,2] = (mag *15).astype(int)
+        return flow
+
+```
+
+ Flow Data:
+
+```python
+nxt_resize=nxt[200:400]
+nxt_resize=cv2.resize(nxt_resize, (0,0), fx = 0.4, fy=0.5)
+nxt_resize=cv2.resize(nxt_resize, self.DSIZE, interpolation = cv2.INTER_AREA)
+processed_video[i]=nxt_resize/127.50 - 1.0
+```
+
+## 
+
 ## Data Augmentation:
 
 Due to the limited availability of data, creativity was needed for augmentation.
@@ -208,22 +244,20 @@ This particular model works well with a LR of 0.0001.
 
 ## Training:
 
-After a lot of trial and error, we concluded that the models needed augmentation to avoid overfitting. We trained with augmentation without flip and with flip for 1000 epochs, callbacks ensured that we were not saving the point of overfitting.
+After a lot of trial and error, we concluded that the models needed augmentation to avoid overfitting. We trained with augmentation without flip and with flip for 500 epochs, callbacks ensured that we were not saving the point of overfitting.
 
 `checkpoint = ModelCheckpoint(self.W_FILE, monitor='val_loss', verbose=1,
           save_best_only=True, mode='auto', period=1)`
-
-Finally the model was trained further by the clipped flipped video reserved for training. 
 
 
 
 ## Model Results and Performance:
 
-In the end the resulting model has a training accuracy of  and a validation accuracy of  .
+In the end the resulting model has a training loss of 5.4524 and a validation loss of  4.9889.
 
-It performed with an accuracy of -- with the unseen flipped video.
+It performed with an accuracy of 40.2 with the unseen flipped video.
 
-The results can be found in ... 
+The results of the test video are in **outTestPrediction.txt**
 
 ## Potential Problems:
 
