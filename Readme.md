@@ -82,6 +82,10 @@ def optflow(self,frame1,frame2):
 
 ```
 
+<img src=".\pics\optflow.png" alt="optflow" style="zoom:100%;" />*OPTFLOW IMAGE*
+
+
+
  Flow Data:
 
 ```python
@@ -91,7 +95,7 @@ nxt_resize=cv2.resize(nxt_resize, self.DSIZE, interpolation = cv2.INTER_AREA)
 processed_video[i]=nxt_resize/127.50 - 1.0
 ```
 
-## 
+<img src=".\pics\flow.png" alt="flow" style="zoom:100%;" />*FLOW IMAGE*
 
 ## Data Augmentation:
 
@@ -168,13 +172,7 @@ These provide a way to deal with sudden changes in brightness. However the perfo
    ```
    
 
-<img src=".\pics\optflow.png" alt="optflow" style="zoom:100%;" />*OPTFLOW IMAGE*
 
-
-
-<img src=".\pics\flow.png" alt="flow" style="zoom:100%;" />*FLOW IMAGE*
-
-​														
 
 ## Final Model Architecture:
 
