@@ -257,7 +257,7 @@ It performed with an accuracy of 40.2 with the unseen flipped video.
 
 The results of the test video are in **outTestPrediction.txt**
 The video with the predictions can be found **[https://youtu.be/FwLZgNDobj8]**  here.
-[/pics/speedchallenge.gif](Result)
+<img src="/pics/speedchallenge.gif" style="zoom:100%;" />
 
 ## Potential Problems:
 
